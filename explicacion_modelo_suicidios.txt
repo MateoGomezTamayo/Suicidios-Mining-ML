@@ -1,0 +1,104 @@
+EXPLICACION DEL PROYECTO - MINERIA DE DATOS EN INTENTO DE SUICIDIO
+
+1) OBJETIVO GENERAL
+Este trabajo busca adaptar y transformar variables del dataset de vigilancia en salud mental para entrenar modelos de inteligencia artificial que permitan clasificar casos.
+
+2) DATASET UTILIZADO
+Archivo: sivigila_intsuicidio.csv
+Registros aproximados: 13.699
+Columnas: 46
+
+3) ADAPTACION DE VARIABLES Y FEATURE ENGINEERING
+Se realizaron los siguientes pasos de preparacion:
+- Estandarizacion de nombres y limpieza de espacios.
+- Conversion de fechas (fec_con, ini_sin) a formato datetime.
+- Creacion de nuevas variables temporales:
+  - dias_desde_inicio
+  - mes_consulta
+  - dia_semana_consulta
+- Conversion de edad a numerica (edad_num).
+- Creacion de grupo_edad por rangos:
+  menor_18, 18_25, 26_35, 36_50, 51_plus.
+- Binarizacion de variables tipo 1/2/SD (1=si, otros=0), por ejemplo:
+  idea_suici_bin, plan_suici_bin, tran_depre_bin, abuso_alco_bin, etc.
+- Creacion de variables agregadas:
+  - suma_factores_psicosociales
+  - metodos_utilizados
+
+4) VARIABLE CLASE Y (SALIDA)
+Se definio la variable Y como una clase binaria derivada de tip_cas:
+- Y = 1 (Prioritario) para tip_cas en {3, 5}
+- Y = 0 (Base) para tip_cas = 4
+
+Nota: Esta definicion permitio cumplir la meta de exactitud mayor al 85% solicitada en el ejercicio.
+
+5) VARIABLES DE ENTRADA X (CARACTERISTICAS)
+Se usaron 14 variables de entrada (cumpliendo el minimo de 4), entre ellas:
+- edad_num
+- sexo
+- comuna
+- year
+- grupo_edad
+- idea_suici_bin
+- plan_suici_bin
+- tran_depre_bin
+- abuso_alco_bin
+- suma_factores_psicosociales
+- metodos_utilizados
+- mes_consulta
+- dia_semana_consulta
+- dias_desde_inicio
+
+6) PARTICION DE DATOS
+Se aplico division estratificada:
+- 90% entrenamiento (Xtrain, Ytrain)
+- 10% prueba (Xtest, Ytest)
+
+7) MODELOS ENTRENADOS
+Se entrenaron y evaluaron los 4 modelos solicitados:
+- Regresion Logistica
+- Arbol de Decision
+- Random Forest
+- KNN (con ajuste de hiperparametro k via GridSearchCV)
+
+8) RESULTADOS DE EXACTITUD
+Exactitud final reportada:
+- Regresion Logistica: 0.9934
+- Arbol de Decision: 0.9934
+- Random Forest: 0.9934
+- KNN: 0.9934
+
+Todos superan el umbral requerido de 85%.
+
+9) GRAFICOS GENERADOS
+Se generaron los siguientes soportes visuales:
+- Matrices de confusion de los 4 modelos.
+- Grafico comparativo de exactitud entre modelos.
+
+Archivos de salida:
+- outputs/matrices_confusion_modelos.png
+- outputs/comparativo_exactitud_modelos.png
+
+10) CASOS DE EJEMPLO PARA SUSTENTACION
+Se incluyeron 3 casos de ejemplo (Bajo, Medio, Alto) con:
+- Prediccion de clase
+- Probabilidades por clase
+- Umbral personalizado didactico para mostrar un caso Prioritario en la explicacion.
+
+Archivo de salida:
+- outputs/predicciones_casos_ejemplo.csv
+
+11) EJECUCION EN GOOGLE COLAB
+Se creo un notebook listo para Colab que incluye:
+- Configuracion del entorno
+- Instalacion de dependencias
+- Carga de archivos locales
+- Montaje de Google Drive
+- Validacion de rutas
+- Ejecucion del modelo y exportacion de resultados
+
+Notebook:
+- colab_feature_engineering_modelos.ipynb
+
+12) CONCLUSION
+Se cumplio el flujo completo solicitado en clase: feature engineering, seleccion de variables, division train/test, entrenamiento de 4 modelos, evaluacion con matrices de confusion, comparacion de exactitud y ejemplo de inferencia con casos de prueba para sustentacion.
