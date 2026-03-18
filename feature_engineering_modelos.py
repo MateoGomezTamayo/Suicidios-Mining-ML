@@ -87,12 +87,18 @@ factor_cols_bin = [f"{c}_bin" for c in binary_cols]
 df["suma_factores_psicosociales"] = df[factor_cols_bin].sum(axis=1)
 
 # Puntaje clinico ponderado para dar mayor relevancia a trastornos psiquiatricos.
+# Coeficientes basados en tasas epidemiológicas (Ministerio de Sanidad España - ops_est14.pdf):
+# - Depresión: 3 puntos (10-15% tasa de suicidio)
+# - Trastorno Personalidad: 3 puntos (6x riesgo aumentado)
+# - Trastorno Bipolar: 4 puntos (15x riesgo - AUMENTADO de 3)
+# - Esquizofrenia: 4 puntos (10-13% consumado - máximo riesgo)
+# - Antecedentes: 3 puntos (multiplicador +40% - AUMENTADO de 2)
 df["puntaje_trastornos"] = (
     3 * df["tran_depre_bin"]
     + 3 * df["trast_personalidad_bin"]
-    + 3 * df["trast_bipolaridad_bin"]
+    + 4 * df["trast_bipolaridad_bin"]
     + 4 * df["esquizofre_bin"]
-    + 2 * df["antec_tran_bin"]
+    + 3 * df["antec_tran_bin"]
 )
 
 # Conteo de métodos usados
@@ -149,6 +155,36 @@ print("Xtrain:", Xtrain.shape, "Ytrain:", Ytrain.shape)
 print("Xtest :", Xtest.shape, "Ytest :", Ytest.shape)
 print("Distribucion Ytrain:\n", Ytrain.value_counts(normalize=True).rename("proporcion"))
 print("Distribucion Ytest:\n", Ytest.value_counts(normalize=True).rename("proporcion"))
+
+
+def calcular_peso_clinico(X_df):
+    """Calcula pesos de entrenamiento para priorizar carga de trastornos."""
+    base = np.ones(len(X_df), dtype=float)
+    puntaje = X_df["puntaje_trastornos"].to_numpy(dtype=float)
+
+    # A mayor puntaje de trastornos, mayor peso en entrenamiento.
+    peso = base + 0.25 * puntaje
+
+    # Bonos clinicos por señales de alta severidad.
+    peso += 1.0 * X_df["esquizofre_bin"].to_numpy(dtype=float)
+    combo_critico = (
+        (X_df["tran_depre_bin"] == 1)
+        & (X_df["idea_suici_bin"] == 1)
+        & (X_df["plan_suici_bin"] == 1)
+    )
+    peso += 1.0 * combo_critico.to_numpy(dtype=float)
+
+    # Evita pesos extremos.
+    return np.clip(peso, 1.0, 8.0)
+
+
+sample_weight_train = calcular_peso_clinico(Xtrain)
+print(
+    "Pesos clinicos train -> "
+    f"min: {sample_weight_train.min():.2f}, "
+    f"p50: {np.median(sample_weight_train):.2f}, "
+    f"max: {sample_weight_train.max():.2f}"
+)
 
 numeric_features = [
     "year",
@@ -217,7 +253,7 @@ for name, model in models.items():
             ("model", model),
         ]
     )
-    pipe.fit(Xtrain, Ytrain)
+    pipe.fit(Xtrain, Ytrain, model__sample_weight=sample_weight_train)
     preds = pipe.predict(Xtest)
 
     acc = accuracy_score(Ytest, preds)
@@ -244,7 +280,19 @@ search = GridSearchCV(
     scoring="accuracy",
     n_jobs=-1,
 )
-search.fit(Xtrain, Ytrain)
+
+# KNN no admite sample_weight en fit; se aproxima con expansion ponderada.
+knn_repeat_factor = np.clip(np.round(sample_weight_train).astype(int), 1, 8)
+knn_idx = np.repeat(np.arange(len(Xtrain)), knn_repeat_factor)
+Xtrain_knn = Xtrain.iloc[knn_idx].reset_index(drop=True)
+Ytrain_knn = Ytrain.iloc[knn_idx].reset_index(drop=True)
+
+print(
+    f"Tamano train original: {len(Xtrain)} | "
+    f"train ponderado KNN: {len(Xtrain_knn)}"
+)
+
+search.fit(Xtrain_knn, Ytrain_knn)
 
 best_knn = search.best_estimator_
 trained_pipelines["KNN"] = best_knn
@@ -463,18 +511,67 @@ print(f"  Metodos utilizados: {metodos}")
 
 if hasattr(modelo_final, "predict_proba"):
     prob_m = modelo_final.predict_proba(caso_manual)[0]
-    umbral_manual = umbral_personalizado if "umbral_personalizado" in locals() else 0.5
-    pred_modelo = int(prob_m[1] >= umbral_manual)
-    puntaje_manual = int(3 * tran_dep + 3 * trast_p + 3 * trast_b + 4 * esquizo + 2 * antec_t)
-    regla_clinica = (puntaje_manual >= 8) or (tran_dep == 1 and plan_s == 1 and idea_s == 1)
+    umbral_base = umbral_personalizado if "umbral_personalizado" in locals() else 0.5
+    # Coeficientes actualizados según tasas epidemiológicas (mín.Sanidad)
+    puntaje_manual = int(3 * tran_dep + 3 * trast_p + 4 * trast_b + 4 * esquizo + 3 * antec_t)
+    combo_critico_manual = int(tran_dep == 1 and plan_s == 1 and idea_s == 1)
+
+    # Umbral dinamico: en casos con alta severidad clinica se vuelve mas sensible.
+    # Máximo teórico actualizado: 3+3+4+4+3 = 17 (antes era 16)
+    factor_severidad = max(0.0, min(1.0, puntaje_manual / 17.0))
+    umbral_modelo = max(1e-6, umbral_base * (1.0 - 0.98 * factor_severidad))
+
+    # Score del modelo ajustado por severidad clinica para reflejar carga de trastornos.
+    score_modelo_ajustado = min(
+        1.0,
+        float(prob_m[1]) + 0.08 * factor_severidad + 0.04 * combo_critico_manual,
+    )
+    pred_modelo = int(score_modelo_ajustado >= umbral_modelo)
+
+    # Umbral actualizado: antes 8/16 (50%), ahora 9/17 (53% aprox.)
+    regla_clinica = (puntaje_manual >= 9) or (tran_dep == 1 and plan_s == 1 and idea_s == 1)
     pred_manual = int(pred_modelo == 1 or regla_clinica)
-    clase_str = "PRIORITARIO" if pred_manual == 1 else "BASE"
-    print(f"\n  PREDICCION        : {clase_str}")
-    print(f"  Umbral aplicado         : {umbral_manual:.4f}")
-    print(f"  Regla clinica trastornos: {'ACTIVA' if regla_clinica else 'NO ACTIVA'}")
-    print(f"  Probabilidad Base       : {prob_m[0]:.2%}")
-    print(f"  Probabilidad Prioritario: {prob_m[1]:.2%}")
+    clase_modelo = "PRIORITARIO" if pred_modelo == 1 else "BASE"
+    clase_final = "PRIORITARIO" if pred_manual == 1 else "BASE"
+
+    # Determinar predicción del modelo CRUDO (solo probabilidades)
+    pred_modelo_crudo = int(prob_m[1] >= umbral_base)
+    clase_modelo_crudo = "PRIORITARIO" if pred_modelo_crudo == 1 else "BASE"
+
+    if regla_clinica and pred_modelo == 0:
+        motivo = "Se activa prioridad por regla clinica de trastornos."
+    elif regla_clinica and pred_modelo == 1:
+        motivo = "Coinciden modelo y regla clinica en prioridad."
+    else:
+        motivo = "No se activa regla clinica; se usa decision del modelo."
+
+    print(f"\n╔════════════════════════════════════════════════════════════╗")
+    print(f"║         ANÁLISIS DETALLADO DE PREDICCIÓN                  ║")
+    print(f"╚════════════════════════════════════════════════════════════╝")
+    print(f"\n[1] PROBABILIDADES CRUDAS DEL MODELO")
+    print(f"    Prob. Base       : {prob_m[0]:.2%} ({prob_m[0]:.8f})")
+    print(f"    Prob. Prioritario: {prob_m[1]:.2%} ({prob_m[1]:.8f})")
+    print(f"    Predicción cruda : {clase_modelo_crudo} (umbral={umbral_base:.4f})")
+    
+    print(f"\n[2] AJUSTE POR SEVERIDAD CLÍNICA")
+    print(f"    Puntaje trastornos      : {puntaje_manual}/17")
+    print(f"    Factor severidad        : {factor_severidad:.2%}")
+    print(f"    Score ajustado          : {score_modelo_ajustado:.8f}")
+    print(f"    Umbral dinámico         : {umbral_modelo:.8f}")
+    print(f"    Predicción ajustada     : {clase_modelo} (severidad influye)")
+    
+    print(f"\n[3] REGLA CLÍNICA DE URGENCIA")
+    print(f"    Puntaje >= 9            : {puntaje_manual >= 9} ({puntaje_manual}/17)")
+    print(f"    Depre + Plan + Idea     : {combo_critico_manual == 1}")
+    print(f"    Regla clínica           : {'ACTIVA ✓' if regla_clinica else 'NO ACTIVA'}")
+    
+    print(f"\n╔════════════════════════════════════════════════════════════╗")
+    print(f"║  PREDICCIÓN FINAL: {clase_final:20} ║")
+    print(f"╠════════════════════════════════════════════════════════════╣")
+    print(f"║  Justificación: {motivo:40} ║")
+    print(f"╚════════════════════════════════════════════════════════════╝")
 else:
+    pred_manual = int(modelo_final.predict(caso_manual)[0])
     clase_str = "PRIORITARIO" if pred_manual == 1 else "BASE"
-    print(f"\n  PREDICCION        : {clase_str}")
+    print(f"\n  PREDICCION FINAL        : {clase_str}")
 print("-"*60)
