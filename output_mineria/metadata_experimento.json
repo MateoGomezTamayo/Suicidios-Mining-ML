@@ -1,0 +1,19 @@
+{
+  "mejor_modelo":"Regresion Logistica",
+  "f1_mejor":0.7838,
+  "roc_auc_mejor":0.5186,
+  "k_clusters":2,
+  "silhouette":0.3658573705,
+  "n_train":10957,
+  "n_test":2740,
+  "features":[
+    "edad",
+    "sexo_enc",
+    "year",
+    "freq_comuna",
+    "grupo_etario_joven_18_25",
+    "grupo_etario_adulto_26_35",
+    "grupo_etario_adulto_36_50",
+    "grupo_etario_mayor_51"
+  ]
+}

@@ -1,0 +1,90 @@
+================================================================
+COSTEO STEP FUNCTIONS - PROYECCIÓN 2 AÑOS
+Pipeline SIVIGILA | 3 ejecuciones diarias
+Fecha: Marzo 2026
+================================================================
+
+PRECIOS OFICIALES STEP FUNCTIONS (Standard Workflow)
+------------------------------------------------------
+- Precio por transición  : $0.000025 USD
+- Free tier mensual      : 4,000 transiciones / mes (permanente)
+
+CONFIGURACIÓN DEL PIPELINE
+----------------------------
+- Ejecuciones por día    : 3
+- Ejecuciones por mes    : 3 × 30 = 90
+- Transiciones por ejecución: 6
+  START
+    → bronzeToSilverJob   (1)
+    → silverToGoldJob     (2)
+    → PipelineSuccess     (3)
+    → END                 (4)
+    + 2 transiciones internas de Glue sync
+  Total: 6 transiciones
+
+- Transiciones por mes   : 90 × 6 = 540
+
+================================================================
+CÁLCULO MENSUAL
+================================================================
+
+Transiciones generadas   : 540 / mes
+Free tier disponible     : 4,000 / mes
+Transiciones a pagar     : max(0, 540 - 4,000) = 0
+
+COSTO MENSUAL = $0.00
+
+================================================================
+PROYECCIÓN MES A MES (24 meses)
+================================================================
+
+El número de transiciones NO depende del tamaño del dataset.
+Depende SOLO del número de ejecuciones y estados del pipeline.
+Como ambos permanecen constantes, el costo es siempre el mismo.
+
+Mes  | Ejecuciones | Transiciones | Free tier | Pago    | COSTO
+-----|-------------|--------------|-----------|---------|-------
+  1  |     90      |     540      |   4,000   |    0    | $0.00
+  2  |     90      |     540      |   4,000   |    0    | $0.00
+  3  |     90      |     540      |   4,000   |    0    | $0.00
+  4  |     90      |     540      |   4,000   |    0    | $0.00
+  5  |     90      |     540      |   4,000   |    0    | $0.00
+  6  |     90      |     540      |   4,000   |    0    | $0.00
+ 12  |     90      |     540      |   4,000   |    0    | $0.00
+ 24  |     90      |     540      |   4,000   |    0    | $0.00
+
+COSTO TOTAL 2 AÑOS = $0.00
+
+================================================================
+¿CUÁNDO EMPEZARÍA A COSTAR?
+================================================================
+
+Para superar las 4,000 transiciones gratuitas necesitarías:
+
+  4,000 transiciones / 6 por ejecución = 667 ejecuciones/mes
+  667 / 30 días = 22.2 ejecuciones/día
+
+Con 3 ejecuciones/día nunca pagarías por Step Functions.
+
+Si en algún momento llegaras a 22 ejecuciones/día:
+  Transiciones pagadas = (22×30×6) - 4,000 = 3,960 - 4,000 = 0
+  Aún gratis.
+
+Con 23 ejecuciones/día:
+  Transiciones = 23 × 30 × 6 = 4,140
+  Pagadas = 4,140 - 4,000 = 140
+  Costo = 140 × $0.000025 = $0.0035 (menos de 1 centavo)
+
+================================================================
+CONCLUSIÓN
+================================================================
+
+Step Functions es GRATUITO para este pipeline durante los 2 años
+proyectados y muy probablemente para siempre con 3 ejecuciones/día.
+
+El free tier de 4,000 transiciones/mes cubre hasta 7 veces más
+ejecuciones de las que se ejecutan actualmente.
+
+================================================================
+Archivo generado con GitHub Copilot - Clase Big Data AWS
+================================================================

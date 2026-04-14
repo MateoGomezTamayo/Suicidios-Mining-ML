@@ -1,0 +1,5 @@
+Modelo,Accuracy,Precision,Recall,F1-Score,ROC-AUC,CV-F1 (5k)
+Regresion Logistica,0.6445,0.6445,1.0,0.7838,0.5186,0.7839
+Arbol de Decision,0.6372,0.6511,0.9417,0.7699,0.5595,0.7738
+Random Forest,0.6442,0.6495,0.9728,0.779,0.5435,0.7805
+KNN,0.6084,0.664,0.7945,0.7234,0.5333,0.7199

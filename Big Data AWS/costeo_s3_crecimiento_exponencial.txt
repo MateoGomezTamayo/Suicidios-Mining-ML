@@ -1,0 +1,88 @@
+================================================================
+COSTEO S3 - CRECIMIENTO EXPONENCIAL DEL DATASET SILVER
+Pipeline SIVIGILA | Big Data AWS
+Fecha: Marzo 2026
+================================================================
+
+SUPUESTOS
+---------
+- Tamaño inicial Silver: 50 MB (semana 0)
+- Crecimiento: x2 cada semana (dobla cada 7 días)
+- Pipeline ejecutado: 4 veces por mes (1 vez por semana)
+- Storage class: S3 Standard = $0.023 / GB / mes
+- PUT requests: $0.005 / 1,000 objetos
+- GET requests (intra-región S3 → Glue): $0 (gratis dentro de AWS)
+- Se ejecuta 1 Glue Job de Bronze→Silver y 1 de Silver→Gold por semana
+
+FÓRMULA DE CRECIMIENTO
+-----------------------
+Tamaño en semana s = 50 MB × 2^s
+Tamaño en mes m    = 50 MB × 2^(4×m)   (4 semanas por mes)
+
+TABLA DE COSTOS MENSUALES
+--------------------------
+
+Mes  | Semana | Tamaño Silver     | Almacenamiento  | PUTs (4/mes) | TOTAL MES
+-----|--------|-------------------|-----------------|--------------|----------
+  1  |    4   | 800 MB            | $0.018          | $0.00002     | $0.018
+  2  |    8   | 12.5 GB           | $0.29           | $0.00002     | $0.29
+  3  |   12   | 200 GB            | $4.60           | $0.00002     | $4.60
+  4  |   16   | 3.2 TB            | $73.60          | $0.00002     | $73.60     ⚠
+  5  |   20   | 50 TB             | $1,178          | $0.00002     | $1,178     🚨
+  6  |   24   | 800 TB            | $18,841         | $0.00002     | $18,841    🚨🚨
+  7  |   28   | 12.5 PB           | $301,465        | $0.00002     | $301,465   💀
+  8  |   32   | 200 PB            | $4,823,450      | $0.00002     | $4,823,450 ☠
+ 12  |   48   | 12,800 EB         | $316,000,000,000| ~$0          | $316 mil millones
+ 24  |   96   | ≈ 3.96 × 10^27 TB | ≈ $2.28 × 10^28 | ~$0         | ≈ $2.28 × 10^28
+
+DESGLOSE A LOS 2 AÑOS (MES 24)
+--------------------------------
+Tamaño acumulado : 50 MB × 2^96 ≈ 3.96 × 10^27 TB
+Almacenamiento   : ≈ $2.28 × 10^28 USD / mes
+PUT requests     : $0.00002 (insignificante)
+GET requests     : $0.00 (gratis intra-región)
+─────────────────────────────────────
+TOTAL MES 24     : ≈ $2.28 × 10^28 USD
+
+   Referencia: el PIB mundial completo ≈ $10^14 USD
+   El costo del mes 24 supera el PIB mundial 100 billones de veces.
+
+CONCLUSIÓN
+-----------
+El crecimiento x2 semanal hace que los costos de PUT/GET sean
+completamente irrelevantes (< 0.0001% del total).
+El único driver de costo es el ALMACENAMIENTO.
+
+SOLUCIONES OBLIGATORIAS PARA UN DATA LAKE REAL
+------------------------------------------------
+1. S3 Lifecycle Policy
+   - Bronze  → Glacier después de 90 días  ($0.004/GB)
+   - Silver  → Standard-IA después de 30 días ($0.0125/GB)
+   - Gold    → Standard permanente ($0.023/GB)
+
+2. Particionado por fecha
+   - Permite eliminar particiones antiguas sin borrar todo
+
+3. Compactación de archivos
+   - Consolida muchos parquet pequeños en archivos grandes
+   - Reduce PUT requests y mejora rendimiento de lectura
+
+4. TTL (Time To Live) por capa
+   - Bronze:  90 días → luego Glacier o borrado
+   - Silver:  1 año   → luego archivar
+   - Gold:    indefinido (solo agregaciones)
+
+5. Usar Glacier Deep Archive para históricos
+   - $0.00099/GB (vs $0.023 Standard = 96% menos)
+   - Ideal para datos que casi nunca se consultan
+
+IMPACTO DE LIFECYCLE EN EL MES 4 (primer mes crítico: 3.2 TB)
+---------------------------------------------------------------
+Sin lifecycle (Standard):      3,276.8 GB × $0.023 = $75.37/mes
+Con Standard-IA (>30 días):    3,276.8 GB × $0.0125 = $40.96/mes
+Con Glacier Instant (>90 días):3,276.8 GB × $0.004  = $13.11/mes
+Con Deep Archive (>180 días):  3,276.8 GB × $0.00099 = $3.24/mes
+
+================================================================
+Archivo generado con GitHub Copilot - Clase Big Data AWS
+================================================================

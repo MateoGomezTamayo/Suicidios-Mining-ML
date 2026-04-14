@@ -1,0 +1,177 @@
+================================================================
+COSTEO AMAZON ATHENA - PROYECCIÓN 2 AÑOS
+3 consultas diarias (1 por tabla Gold) | Tablas completas
+Fecha: Marzo 2026
+================================================================
+
+PRECIOS OFICIALES ATHENA
+--------------------------
+- Precio por datos escaneados : $5.00 USD por TB
+- Mínimo por consulta         : 10 MB (aunque la tabla sea más pequeña)
+- Free tier permanente        : NO EXISTE (a diferencia de Step Functions)
+- Formato Parquet             : reduce escaneo vs CSV (columnar)
+
+CONFIGURACIÓN DEL PIPELINE
+----------------------------
+- Consultas por día           : 3 (1 por tabla Gold)
+- Consultas por mes           : 3 × 30 = 90
+- Consultas por tabla/mes     : 30
+- Tipo de consulta            : SELECT completo (escaneo total)
+
+TABLAS GOLD ANALIZADAS
+-----------------------
+  T1: sivigila_resumen_comuna  → agrupada por comuna×año → MUY PEQUEÑA
+                                  Siempre < 10 MB → cobra mínimo
+  T2: sivigila_perfil_riesgo   → 1 fila por paciente → crece 1:1 con Silver
+                                  ES LA QUE IMPULSA EL COSTO
+  T3: gold_sales_metrics       → agrupada por ciudad → MUY PEQUEÑA
+                                  Siempre < 10 MB → cobra mínimo
+
+SUPUESTOS DE CRECIMIENTO
+--------------------------
+- Tamaño Silver hoy   : ~50 MB (datos reales medidos)
+- T2 sigue Silver     : mismo número de filas + columnas adicionales
+- Crecimiento         : ×2 cada semana (como toda la capa Silver)
+- T1 y T3             : siempre cobran el mínimo de 10 MB por consulta
+
+================================================================
+FÓRMULAS DE COSTO
+================================================================
+
+  Costo T2/consulta = Tamaño_TB × $5.00
+  Costo T1/consulta = 10 MB mínimo × ($5.00 / 1,000,000 MB) = $0.00005
+  Costo T3/consulta = $0.00005  (igual que T1)
+
+  Total mensual = (30 × Costo_T2) + (30 × $0.00005) + (30 × $0.00005)
+                = (30 × Costo_T2) + $0.003  ← T1 y T3 son despreciables
+
+================================================================
+PROYECCIÓN MES A MES
+================================================================
+
+Mes | Semana | Tamaño T2    | Costo/consulta T2 | 30 consultas | T1+T3/mes | TOTAL MES
+----|--------|--------------|-------------------|--------------|-----------|----------
+HOY |   0    | 50 MB        | $0.00025          | $0.0075      | $0.003    | $0.01
+  1 |   4    | 800 MB       | $0.004            | $0.12        | $0.003    | $0.12
+  2 |   8    | 12.8 GB      | $0.064            | $1.92        | $0.003    | $1.92
+  3 |  12    | 204 GB       | $1.02             | $30.60       | $0.003    | $30.60
+  4 |  16    | 3.2 TB       | $16.00            | $480.00      | $0.003    | $480.00   ⚠
+  5 |  20    | 51 TB        | $255.00           | $7,650       | $0.003    | $7,650    🚨
+  6 |  24    | 819 TB       | $4,095            | $122,850     | $0.003    | $122,850  💀
+ 12 |  48    | ~52,000 TB   | ~$260,000         | ~$7.8M       | $0.003    | ~$7.8M    ☠
+ 24 |  96    | ~3.96×10¹⁸TB | INVIABLE          | INVIABLE     | $0.003    | INVIABLE
+
+NOTA DE MES 24: Tamaño teórico = 50 MB × 2^96 ≈ 3.96 × 10²¹ GB
+  Costo mensual teórico ≈ $5.94 × 10²⁰ USD (quinientos noventa cuatrillones)
+  Esto supera el PIB mundial total por un factor de 10¹⁰.
+  Físicamente imposible: no existe infraestructura para almacenar ni procesar eso.
+
+================================================================
+DETALLE DE LOS PRIMEROS 4 MESES (viables)
+================================================================
+
+HOY (50 MB Silver, T2 ~50 MB Parquet)
+  Consulta T2   : 50 MB × $5.00/TB = 50 × $0.000005 = $0.00025
+  Consultas T2/mes : 30 × $0.00025 = $0.0075
+  T1 + T3/mes   : 60 × $0.00005  = $0.003
+  TOTAL         : $0.01 / mes
+
+MES 1 (Silver ~800 MB, T2 ~800 MB Parquet)
+  Consulta T2   : 800 MB × $0.000005/MB = $0.004
+  Consultas T2/mes : 30 × $0.004 = $0.12
+  T1 + T3/mes   : $0.003
+  TOTAL         : $0.12 / mes
+
+MES 2 (Silver ~12.8 GB, T2 ~12.8 GB Parquet)
+  Consulta T2   : 12,800 MB × $0.000005 = $0.064
+  Consultas T2/mes : 30 × $0.064 = $1.92
+  T1 + T3/mes   : $0.003
+  TOTAL         : $1.92 / mes
+
+MES 3 (Silver ~204 GB, T2 ~204 GB Parquet)
+  Consulta T2   : 204,000 MB × $0.000005 = $1.02
+  Consultas T2/mes : 30 × $1.02 = $30.60
+  T1 + T3/mes   : $0.003
+  TOTAL         : $30.60 / mes
+
+MES 4 (Silver ~3.2 TB, T2 ~3.2 TB Parquet)  ⚠ PUNTO DE QUIEBRE
+  Consulta T2   : 3,200 GB × $0.005/GB = $16.00
+  Consultas T2/mes : 30 × $16.00 = $480.00
+  T1 + T3/mes   : $0.003
+  TOTAL         : $480.00 / mes
+
+================================================================
+RESUMEN COMPARATIVO: ATHENA VS GLUE VS STEP FUNCTIONS
+================================================================
+
+Mes | Tamaño Silver | Step Functions | Glue Jobs    | Athena     | TOTAL MES
+----|---------------|----------------|--------------|------------|----------
+HOY | 50 MB         | $0.00          | $5.22        | $0.01      | $5.23
+  1 | 800 MB        | $0.00          | $21.07       | $0.12      | $21.19
+  2 | 12.8 GB       | $0.00          | $63.36       | $1.92      | $65.28
+  3 | 204 GB        | $0.00          | $264.00      | $30.60     | $294.60
+  4 | 3.2 TB        | $0.00          | $2,112.00    | $480.00    | $2,592.00  ⚠
+  5 | 51 TB         | $0.00          | ~$79,200     | ~$7,650    | ~$86,850   🚨
+  6 | 819 TB        | $0.00          | INVIABLE     | ~$122,850  | INVIABLE   💀
+
+Nota: Athena representa ~18-23% del costo total de Glue+Athena.
+El costo principal sigue siendo Glue Jobs (procesamiento).
+
+================================================================
+¿QUÉ CONTROLA EL COSTO EN ATHENA?
+================================================================
+
+A diferencia de Glue (que paga por tiempo de cómputo),
+Athena paga estrictamente por datos ESCANEADOS.
+
+Una consulta SELECT * FROM tabla_grande siempre escanea TODO.
+
+Para reducir el escaneo hay 2 estrategias principales:
+
+1. PARTICIONAR LA TABLA POR FECHA
+   En lugar de una tabla grande, escribir:
+     s3://.../sivigila_perfil_riesgo/year=2025/month=03/
+   Luego en la consulta:
+     WHERE year = 2025 AND month = 03
+   Athena solo escanea esa partición → costo constante por día
+
+2. CREAR VISTAS DE RESUMEN DIARIO
+   Si la consulta final busca solo el último día:
+     WHERE fec_con >= current_date - interval '1' day
+   Con particionado: escanea solo ~50 MB/día independiente del histórico
+   Costo fijo: $0.00025 / consulta = $0.0075 / mes para siempre
+
+3. USAR COLUMNAS ESPECÍFICAS EN LUGAR DE SELECT *
+   SELECT id, edad, sexo, nivel_riesgo FROM tabla
+   Parquet permite saltarse columnas no pedidas
+   Reducción típica: 50-80% del escaneo
+
+4. COMPACTACIÓN + ESTADÍSTICAS
+   Activar AWS Glue Data Catalog con estadísticas de columna
+   Athena puede usar metadata para evitar escaneos innecesarios
+
+================================================================
+CONCLUSIÓN
+================================================================
+
+1. HOY y MES 1-2: Athena cuesta < $2/mes. TOTALMENTE viable.
+
+2. MES 3: $30/mes solo en Athena. Empieza a ser significativo.
+
+3. MES 4: $480/mes en Athena + $2,112 en Glue = $2,592 total.
+   PUNTO DE QUIEBRE: se necesita optimización urgente.
+
+4. MES 5+: Inviable con consultas completas. Necesariamente
+   se debe implementar particionado por fecha.
+
+5. CON PARTICIONADO: el costo de Athena queda fijo en ~$0.01/mes
+   para siempre, independiente del crecimiento del histórico.
+   (cada consulta solo lee el último día, ~50 MB constante)
+
+6. EL VERDADERO CUELLO DE BOTELLA sigue siendo Glue Jobs,
+   no Athena. Athena optimizable con 1 línea de código (WHERE).
+   Glue requiere rediseño arquitectónico (incremental, streaming).
+
+================================================================
+Archivo generado con GitHub Copilot - Clase Big Data AWS
+================================================================

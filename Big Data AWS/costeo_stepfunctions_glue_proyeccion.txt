@@ -1,0 +1,173 @@
+================================================================
+COSTEO STEP FUNCTIONS + GLUE JOBS - PROYECCIÓN 2 AÑOS
+Pipeline SIVIGILA | 3 ejecuciones diarias
+Fecha: Marzo 2026
+================================================================
+
+SUPUESTOS BASE
+--------------
+- Ejecuciones Step Function: 3 por día = 90 por mes
+- Transiciones por ejecución: 6
+  (START → bronzeToSilverJob → silverToGoldJob → PipelineSuccess → END + 1 interna)
+- Jobs por ejecución: 2 (bronze_to_silver + silver_to_gold)
+- Job runs por mes: 90 ejecuciones × 2 jobs = 180 job runs/mes
+- Dataset Silver hoy: ~50 MB
+- Crecimiento: ×2 cada semana
+- Tiempo REAL medido hoy: ~2 min por job, 2 DPUs G.1X
+- Precio DPU: $0.44 / DPU-hora
+- Step Functions Standard: $0.000025 / transición
+- Free tier Step Functions: 4,000 transiciones / mes
+
+================================================================
+PARTE 1: STEP FUNCTIONS
+================================================================
+
+Transiciones por mes = 90 ejecuciones × 6 transiciones = 540 / mes
+Free tier mensual    = 4,000 transiciones
+
+Transiciones pagadas = max(0, 540 - 4000) = 0
+
+COSTO STEP FUNCTIONS = $0.00 TODOS LOS MESES
+
+El costo de Step Functions es siempre $0 porque 540 transiciones/mes
+nunca superan las 4,000 gratuitas, sin importar cuánto crezca el
+dataset (las transiciones dependen del número de ejecuciones, no
+del tamaño de los datos).
+
+Para superar el free tier necesitarías:
+4,000 / 6 = 667 ejecuciones/mes = 22 ejecuciones/día
+
+================================================================
+PARTE 2: GLUE JOBS - TIEMPO Y COSTO PROYECTADO
+================================================================
+
+FÓRMULAS USADAS
+---------------
+  DPUs      = Tamaño_GB / 5            (fórmula guía, aprox. segura)
+  Tiempo    = Tamaño_GB / (DPUs × 1.5) (fórmula guía ETL simple)
+  Costo/job = DPUs × (tiempo_min/60) × $0.44
+
+TIEMPO REAL HOY (semana 0)
+--------------------------
+  Dataset : ~50 MB = 0.05 GB
+  DPUs    : 2 (G.1X × 2 workers, mínimo Glue)
+  Tiempo  : ~2 min / job  (medido en Glue logs reales)
+  Costo   : 2 × (2/60) × $0.44 = $0.029 / job
+
+TABLA DE PROYECCIÓN MENSUAL
+-----------------------------
+(el tamaño indica el Silver al FINAL del mes procesado 3x/día)
+
+Mes | Semana | Tamaño Silver | DPUs  | Tiempo/job | Costo/job  | Jobs/mes | TOTAL GLUE/mes
+----|--------|---------------|-------|------------|------------|----------|---------------
+HOY |   0    | 50 MB         |   2   |   2 min    | $0.029     |   180    | $5.22
+  1 |   4    | 800 MB        |   4   |   4 min    | $0.117     |   180    | $21.07
+  2 |   8    | 12.8 GB       |   8   |   6 min    | $0.352     |   180    | $63.36
+  3 |  12    | 204 GB        |  20   |  10 min    | $1.467     |   180    | $264.00
+  4 |  16    | 3.2 TB        |  80   |  20 min    | $11.73     |   180    | $2,112.00  ⚠
+  5 |  20    | 51 TB         | 500*  | 120 min    | $440.00    |   180    | $79,200    🚨
+  6 |  24    | 819 TB        | 500*  |~1,900 min  | ~$6,956    |   180    | ~$1.25M    💀 (*)
+
+(*) Procesamiento de 819 TB 3 veces al día es FISICAMENTE IMPOSIBLE con cualquier
+    configuración de Glue. AWS limita workers prácticos. A partir del mes 5-6 el
+    pipeline no puede completarse 3x/día dentro de las 8 horas disponibles.
+
+    Límite práctico Glue: ~500 workers por job (depende de cuotas de cuenta)
+
+DETALLE DE LOS PRIMEROS 4 MESES (viables)
+------------------------------------------
+
+MES 1 (800 MB, G.1X × 4 workers)
+  Configuración : G.1X, 4 workers, 4 DPUs
+  Tiempo/job    : 4 min
+  Costo/job     : 4 × (4/60) × $0.44  = $0.117
+  Total mes     : 180 × $0.117         = $21.07
+  Step Functions: $0.00
+  TOTAL         : $21.07
+
+MES 2 (12.8 GB, G.1X × 8 workers)
+  Configuración : G.1X, 8 workers, 8 DPUs
+  Tiempo/job    : 6 min
+  Costo/job     : 8 × (6/60) × $0.44  = $0.352
+  Total mes     : 180 × $0.352         = $63.36
+  Step Functions: $0.00
+  TOTAL         : $63.36
+
+MES 3 (204 GB, G.2X × 10 workers)
+  Configuración : G.2X, 10 workers, 20 DPUs
+  Tiempo/job    : 10 min
+  Costo/job     : 20 × (10/60) × $0.44 = $1.467
+  Total mes     : 180 × $1.467          = $264.00
+  Step Functions: $0.00
+  TOTAL         : $264.00
+
+MES 4 (3.2 TB, G.4X × 20 workers)
+  Configuración : G.4X, 20 workers, 80 DPUs
+  Tiempo/job    : 20 min
+  Costo/job     : 80 × (20/60) × $0.44 = $11.73
+  Total mes     : 180 × $11.73          = $2,112.00
+  Step Functions: $0.00
+  TOTAL         : $2,112.00
+
+================================================================
+PARTE 3: RESUMEN COMPARATIVO MES A MES
+================================================================
+
+Mes | Tamaño Silver | Step Functions | Glue Jobs    | TOTAL MES
+----|---------------|----------------|--------------|------------
+HOY | 50 MB         | $0.00          | $5.22        | $5.22
+  1 | 800 MB        | $0.00          | $21.07       | $21.07
+  2 | 12.8 GB       | $0.00          | $63.36       | $63.36
+  3 | 204 GB        | $0.00          | $264.00      | $264.00
+  4 | 3.2 TB        | $0.00          | $2,112.00    | $2,112.00   ⚠
+  5 | 51 TB         | $0.00          | ~$79,200     | ~$79,200    🚨
+  6 | 819 TB        | $0.00          | INVIABLE     | INVIABLE    💀
+
+================================================================
+PARTE 4: CONCLUSIONES
+================================================================
+
+1. STEP FUNCTIONS: Costo = $0 durante toda la vida del pipeline
+   con 3 ejecuciones/día. El límite gratuito (4,000 transiciones)
+   nunca se supera con este patrón (540/mes).
+
+2. GLUE JOBS: El único costo que escala agresivamente.
+   - Mes 1: $21    → manejable
+   - Mes 2: $63    → manejable
+   - Mes 3: $264   → empieza a ser significativo
+   - Mes 4: $2,112 → requiere revisión urgente de arquitectura
+   - Mes 5+: decenas de miles → inviable comercialmente
+
+3. PUNTO DE QUIEBRE: El mes 4 (~3.2 TB procesado 3x/día)
+   es el límite práctico antes de que el costo sea insostenible.
+
+4. EL PROBLEMA REAL en el mes 5+ no es solo el costo, sino que
+   Glue físicamente no puede procesar 51 TB × 3 veces/día en
+   ventanas de trabajo normales. Cada job tomaría ~2 horas y
+   con 3 ejecuciones/día se solaparían.
+
+SOLUCIONES PARA MANTENER EL PIPELINE VIABLE
+---------------------------------------------
+A. Reducir frecuencia conforme crece el dataset:
+   - Mes 1-2: 3x/día   (datos pequeños, barato)
+   - Mes 3:   1x/día
+   - Mes 4:   1x/semana
+   - Mes 5+:  procesamiento incremental (solo delta)
+
+B. Procesamiento incremental (solo datos nuevos):
+   - No releer todo el histórico cada vez
+   - Solo procesar los registros nuevos del día
+   - Bronze → Silver: solo archivos nuevos
+   - Tiempo y costo constante independiente del histórico
+
+C. Particionado + compactación:
+   - Escribir por partición de fecha
+   - Glue lee solo la partición del día → tiempo constante
+
+D. Usar Glue Streaming en lugar de Batch:
+   - Procesa eventos en tiempo real
+   - Costo por DPU-hora pero solo cuando hay datos nuevos
+
+================================================================
+Archivo generado con GitHub Copilot - Clase Big Data AWS
+================================================================

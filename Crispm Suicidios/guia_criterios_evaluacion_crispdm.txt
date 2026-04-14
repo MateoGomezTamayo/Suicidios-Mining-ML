@@ -1,0 +1,311 @@
+GUIA DE CRITERIOS DE EVALUACION - TALLER CRISP-DM
+===================================================
+Puntaje Total: 5.0 puntos
+
+1. COMPRENSION DEL NEGOCIO (0.5 puntos)
+========================================
+Qué realizar:
+- Definir CLARAMENTE el problema a resolver.
+- Contextualizar el dataset en un escenario real o hipotético.
+- Plantear objetivos de análisis coherentes.
+- Especificar el tipo de problema: clasificación / regresión / segmentación / etc.
+- Justificar POR QUé es relevante resolver este problema.
+- Formular preguntas de negocio que guien el análisis.
+
+Checklist:
+[ ] Problema definido claramente
+[ ] Dataset contextualizado
+[ ] Objetivos de análisis planteados
+[ ] Tipo de problema identificado
+[ ] Justificación de relevancia
+[ ] Preguntas de negocio formuladas
+
+
+2. COMPRENSION DE LOS DATOS (0.5 puntos)
+==========================================
+Qué realizar:
+- Exploración adecuada del dataset con Python y/o SQL.
+- Describir correctamente LAS VARIABLES:
+  * Tipos de datos
+  * Distribución
+  * Valores únicos
+  * Rangos
+- Identificar patrones iniciales.
+- Detectar posibles relaciones entre variables.
+- Identificar problemas de calidad de datos (nulos, duplicados, inconsistencias, outliers).
+- Usar gráficos y estadísticas descriptivas para sustentar observaciones.
+
+Técnicas esperadas:
+- EDA (Exploratory Data Analysis)
+- Estadísticas descriptivas (media, mediana, desv. estándar, percentiles)
+- Visualizaciones (histogramas, boxplots, scatter plots, distribuciones)
+
+Checklist:
+[ ] Dataset explorado con Python/SQL
+[ ] Variables descritas completamente
+[ ] Patrones iniciales identificados
+[ ] Relaciones entre variables analizadas
+[ ] Problemas de calidad detectados
+[ ] Gráficos y estadísticas incluidos
+
+
+3. CALIDAD DE DATOS Y VALIDACION (0.5 puntos)
+===============================================
+Qué realizar:
+- Usar Great Expectations para validación de calidad.
+- Identificar problemas de manera ESTRUCTURADA:
+  * Porcentaje de valores nulos
+  * Porcentaje de duplicados
+  * Valores inválidos
+  * Inconsistencias de formato
+- Cuantificar el impacto de cada problema.
+- Explicar CLARAMENTE las decisiones tomadas:
+  * ¿Eliminar o imputar datos nulos?
+  * ¿Cómo manejar duplicados?
+  * ¿Qué hacer con outliers?
+- Justificar cada decisión tomada.
+
+Problemas a detectar:
+- Valores nulos
+- Registros duplicados
+- Valores atípicos (outliers)
+- Inconsistencias de codificación
+- Valores fuera de rango
+- Formato incorrecto de fechas/datos
+
+Checklist:
+[ ] Great Expectations aplicado
+[ ] Problemas identificados estructuradamente
+[ ] Impacto cuantificado (porcentajes)
+[ ] Decisiones documentadas
+[ ] Justificaciones claras para cada decisión
+
+
+4. PREPARACION DE LOS DATOS (1.0 punto)
+=========================================
+Qué realizar:
+- Aplicar correctamente técnicas de limpieza:
+  * Manejo de valores nulos (eliminación, imputación, interpolación)
+  * Codificación de variables categóricas (one-hot, label encoding, etc.)
+  * Escalamiento de variables numéricas (normalización, estandarización)
+  * Eliminación de variables irrelevantes y/o redundantes
+
+- Feature Engineering:
+  * Crear nuevas variables justificadas
+  * Transformar variables existentes
+  * Combinar variables
+
+- Generar dataset final LISTO PARA MODELADO.
+- Explicar CLARAMENTE todas las transformaciones realizadas.
+
+Técnicas esperadas:
+- Imputación de valores faltantes
+- Detección y tratamiento de outliers
+- Codificación de categorías
+- Escalamiento (StandardScaler, MinMaxScaler, etc.)
+- Feature selection
+- Feature engineering
+
+Checklist:
+[ ] Valores nulos manejados
+[ ] Variables categóricas codificadas
+[ ] Escalamiento aplicado
+[ ] Variables redundantes eliminadas
+[ ] Feature engineering realizado
+[ ] Nuevas variables justificadas
+[ ] Dataset final listo
+[ ] Transformaciones explicadas
+
+
+5. MODELADO (1.0 punto)
+========================
+Qué realizar:
+- Seleccionar y entrenar AL MENOS 4 MODELOS diferentes.
+- Aplicar correctamente la división de datos:
+  * 70-80% entrenamiento
+  * 20-30% prueba
+- Ajustar parámetros básicos (hiperparámetros).
+- Explicar el funcionamiento general de cada modelo.
+- Justificar por qué se eligió cada modelo.
+
+Modelos posibles (según el tipo de problema):
+CLASIFICACION:
+- Regresión Logística
+- Árbol de Decisión
+- Random Forest
+- SVM
+- KNN
+- Naive Bayes
+- Gradient Boosting
+
+REGRESION:
+- Regresión Lineal
+- Árbol de Decisión
+- Random Forest
+- SVM
+- Gradient Boosting
+- Ridge/Lasso Regression
+
+SEGMENTACION:
+- K-Means
+- Hierarchical Clustering
+- DBSCAN
+- Gaussian Mixture Models
+
+Checklist:
+[ ] Al menos 4 modelos seleccionados
+[ ] División entrenamiento/prueba correcta
+[ ] Datos de entrenenamiento/prueba separados
+[ ] Modelos entrenados correctamente
+[ ] Hiperparámetros ajustados
+[ ] Funcionamiento de modelos explicado
+[ ] Selección de modelos justificada
+
+
+6. EVALUACION DE MODELOS (0.5 puntos)
+========================================
+Qué realizar:
+- Evaluar modelos correctamente usando métricas apropiadas.
+- Presentar matrices de confusión (si aplica).
+- Mostrar gráficos relevantes.
+- Comparar el desempeño de los 4 modelos.
+- Seleccionar EL MEJOR MODELO.
+- Justificar por qué es el mejor.
+- Analizar resultados de forma CRITICA.
+- Reconocer limitaciones.
+
+Métricas por tipo de problema:
+
+CLASIFICACION:
+- Accuracy
+- Precision
+- Recall
+- F1-Score
+- Matriz de confusión
+- ROC-AUC
+
+REGRESION:
+- MAE (Mean Absolute Error)
+- RMSE (Root Mean Squared Error)
+- R² (Coeficiente de determinación)
+- MAPE (Mean Absolute Percentage Error)
+
+SEGMENTACION:
+- Silhouette Score
+- Davies-Bouldin Index
+- Calinski-Harabasz Index
+- Inercia (para K-Means)
+
+Checklist:
+[ ] Métricas calculadas correctamente
+[ ] Matrices/gráficos incluidos
+[ ] Modelos comparados
+[ ] Mejor modelo seleccionado
+[ ] Justificación documentada
+[ ] Análisis crítico realizado
+[ ] Limitaciones reconocidas
+
+
+7. INTERPRETACION Y VALOR DE NEGOCIO (0.5 puntos)
+===================================================
+Qué realizar:
+- Interpretar resultados en términos del PROBLEMA PLANTEADO.
+- Explicar QUé SIGNIFICAN las predicciones.
+- Explicar CÓMO podrían utilizarse los resultados en un contexto REAL.
+- Plantear posibles DECISIONES basadas en los resultados.
+- Demostrar comprensión del IMPACTO más allá de lo técnico.
+- Vincular hallazgos con objetivos de negocio iniciales.
+
+Especifico para el dataset de suicidios:
+- ¿Qué grupos son más vulnerables?
+- ¿Cuáles son los factores de riesgo principales?
+- ¿Cómo podrían usarse los resultados para PREVENCION?
+- ¿A qué poblaciones dirigirse en campañas de intervención?
+- ¿Qué métricas monitoreaban para detectar cambios?
+
+Checklist:
+[ ] Resultados interpretados en contexto
+[ ] Significado de predicciones explicado
+[ ] Aplicación real planteada
+[ ] Decisiones sugeridas
+[ ] Impacto de negocio comunicado
+[ ] Vínculos con objetivos iniciales
+
+
+8. COMUNICACION Y PRESENTACION - VIDEO (0.5 puntos)
+=====================================================
+Qué realizar:
+- Duración: 10 MINUTOS EXACTOS
+- Presentación CLARA, ORDENADA y ESTRUCTURADA.
+- Explicar todas las FASES DE CRISP-DM.
+- Explicar con PROPIAS PALABRAS (no solo mostrar código).
+- Demostrar DOMINIO del tema.
+- Distribuir el tiempo adecuadamente.
+- Usar recursos visuales (gráficas, notebook, resultados).
+- Exposición comprensible y PROFESIONAL.
+
+Estructura recomendada del video:
+1. Introducción (1 minuto)
+   - Problema y dataset
+   - Objetivos del análisis
+
+2. Comprensión del Negocio (1 minuto)
+   - Contexto
+   - Preguntas de negocio
+
+3. Comprensión y Calidad de Datos (2 minutos)
+   - EDA principal hallazgos
+   - Problemas de calidad detectados
+
+4. Preparación de Datos (1.5 minutos)
+   - Transformaciones realizadas
+   - Feature engineering
+
+5. Modelado (2 minutos)
+   - Modelos seleccionados
+   - Entrenemamiento
+
+6. Evaluación (1 minuto)
+   - Métricas del mejor modelo
+   - Comparación de modelos
+
+7. Conclusiones e Impacto (1.5 minutos)
+   - Interpretación de resultados
+   - Valor de negocio
+   - Recomendaciones
+
+Checklist:
+[ ] Video dura 10 minutos
+[ ] Todas las fases CRISP-DM incluidas
+[ ] Explicaciones con palabras propias
+[ ] Dominio del tema demostrado
+[ ] Tiempo bien distribuido
+[ ] Gráficos y resultados mostrados
+[ ] Presentación profesional y clara
+[ ] Audio y video de calidad
+
+==================================================
+RESUMEN PUNTAJE:
+==================================================
+Comprensión del Negocio ............ 0.5
+Comprensión de Datos .............. 0.5
+Calidad de Datos .................. 0.5
+Preparación de Datos .............. 1.0
+Modelado .......................... 1.0
+Evaluación de Modelos ............. 0.5
+Interpretación y Valor ............ 0.5
+Comunicación y Video .............. 0.5
+                                ------
+TOTAL .............................. 5.0
+
+==================================================
+RECOMENDACIONES FINALES:
+==================================================
+1. Sigue el orden CRISP-DM secuencialmente.
+2. Documenta CADA decisión y su JUSTIFICACION.
+3. Usa Python con Pandas, SQL y/o PySpark según sea necesario.
+4. Incluye gráficos y estadísticas para sustentar afirmaciones.
+5. Mantén un notebook LIMPIO y BIEN ORGANIZADO.
+6. No apresures el video: practica antes de grabar.
+7. Lee los criterios de evaluación VARIAS VECES antes de enviar.
+8. Verifica que cumplas TODOS los checklist antes de presentar.

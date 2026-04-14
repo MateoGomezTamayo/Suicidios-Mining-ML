@@ -1,0 +1,63 @@
+{
+  "Comment": "Pipeline Bronze -> Silver -> Gold con Glue para dataset SIVIGILA",
+  "StartAt": "bronzeToSilverJob",
+  "States": {
+    "bronzeToSilverJob": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::glue:startJobRun.sync",
+      "Parameters": {
+        "JobName": "bronze_to_silver"
+      },
+      "ResultPath": "$.bronzeToSilverResult",
+      "Retry": [
+        {
+          "ErrorEquals": ["Glue.AWSGlueException", "States.TaskFailed"],
+          "IntervalSeconds": 30,
+          "MaxAttempts": 2,
+          "BackoffRate": 2
+        }
+      ],
+      "Catch": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "Next": "JobFailed",
+          "ResultPath": "$.error"
+        }
+      ],
+      "Next": "silverToGoldJob"
+    },
+    "silverToGoldJob": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::glue:startJobRun.sync",
+      "Parameters": {
+        "JobName": "silver_to_gold"
+      },
+      "ResultPath": "$.silverToGoldResult",
+      "Retry": [
+        {
+          "ErrorEquals": ["Glue.AWSGlueException", "States.TaskFailed"],
+          "IntervalSeconds": 30,
+          "MaxAttempts": 2,
+          "BackoffRate": 2
+        }
+      ],
+      "Catch": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "Next": "JobFailed",
+          "ResultPath": "$.error"
+        }
+      ],
+      "Next": "PipelineSuccess"
+    },
+    "PipelineSuccess": {
+      "Type": "Succeed",
+      "Comment": "Pipeline completado: Bronze -> Silver -> Gold"
+    },
+    "JobFailed": {
+      "Type": "Fail",
+      "Error": "GlueJobFailed",
+      "Cause": "Uno de los jobs de Glue fallo. Revisar CloudWatch Logs."
+    }
+  }
+}

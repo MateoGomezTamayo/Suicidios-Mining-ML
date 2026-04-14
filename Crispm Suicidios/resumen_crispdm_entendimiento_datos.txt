@@ -1,0 +1,52 @@
+RESUMEN METODOLOGIA CRISP-DM
+Enfoque: Entendimiento de datos (taller CRISP-DM)
+
+CRISP-DM es una metodologia estandar para proyectos de mineria de datos y consta de 6 fases:
+1. Entendimiento del negocio
+2. Entendimiento de los datos
+3. Preparacion de los datos
+4. Modelado
+5. Evaluacion
+6. Despliegue
+
+FASE 2: ENTENDIMIENTO DE LOS DATOS
+Objetivo:
+Comprender la estructura, contenido y calidad de los datos antes de construir modelos.
+
+Actividades principales:
+1. Recolectar datos iniciales
+- Identificar fuentes de informacion.
+- Verificar cobertura temporal y poblacional.
+- Definir alcance de variables disponibles.
+
+2. Describir los datos
+- Numero de registros y variables.
+- Tipos de datos (numerico, categorico, fecha, texto).
+- Diccionario de datos y significado de cada campo.
+
+3. Explorar los datos (EDA)
+- Estadisticas descriptivas (media, mediana, dispersion, percentiles).
+- Distribuciones y comportamiento de variables.
+- Relaciones entre variables (correlaciones, cruces por categorias).
+- Identificacion de patrones y tendencias.
+
+4. Verificar calidad de datos
+- Valores faltantes.
+- Duplicados.
+- Inconsistencias de formato o codificacion.
+- Valores atipicos (outliers).
+- Errores de captura.
+
+5. Formular hallazgos e hipotesis iniciales
+- Factores posiblemente asociados al fenomeno de estudio.
+- Variables clave para etapas posteriores de preparacion y modelado.
+
+ENTREGABLES DE ESTA FASE (para el taller)
+1. Informe de fuentes y estructura de los datos.
+2. Perfilamiento de variables.
+3. Resultados de exploracion descriptiva y visual.
+4. Lista de problemas de calidad y plan de tratamiento.
+5. Conclusiones iniciales para guiar la preparacion y el modelado.
+
+CONCLUSION
+La fase de entendimiento de datos en CRISP-DM permite reducir errores en el modelado, mejorar la calidad analitica y orientar decisiones con evidencia. Es la base tecnica para que las siguientes fases sean confiables y utiles.

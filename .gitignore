@@ -1,0 +1,43 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+*.egg-info/
+.eggs/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Logs and temp
+*.log
+*.tmp
+
+# Data artifacts (exclude large/raw data)
+*.parquet
+*.feather
+*.h5
+*.joblib
+*.pkl
+*.pickle
+
+# Project specific large data
+Big Data AWS/sivigila_intsuicidio.csv
+
+# Optional generated outputs
+output_mineria/*.png
+output_mineria/*.jpg
+output_mineria/*.jpeg
+output_mineria/*.svg
