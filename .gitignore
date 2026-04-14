@@ -41,3 +41,9 @@ output_mineria/*.png
 output_mineria/*.jpg
 output_mineria/*.jpeg
 output_mineria/*.svg
+
+# Additional historical output folder
+outputs/
+
+# Root-level dataset
+sivigila_intsuicidio.csv

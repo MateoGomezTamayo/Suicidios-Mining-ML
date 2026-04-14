@@ -2,6 +2,14 @@
 
 Proyecto de Big Data y Mineria de Datos para analizar registros de intento de suicidio (SIVIGILA), integrando una arquitectura de datos en AWS (Bronze/Silver/Gold) con un flujo CRISP-DM para modelado de riesgo.
 
+## Autor
+
+- Mateo Gomez Tamayo
+
+## Descripcion general
+
+El proyecto desarrolla modelos de Machine Learning para clasificacion de casos de intento de suicidio, combinando ingenieria de variables, comparacion de algoritmos y una arquitectura de datos escalable en AWS.
+
 ## Contenido del proyecto
 
 - `crisp_dm_mineria_sivigila.ipynb`: notebook principal de analitica y modelado.
@@ -9,6 +17,13 @@ Proyecto de Big Data y Mineria de Datos para analizar registros de intento de su
 - `Big Data AWS/`: scripts ETL, SQL y archivos de costeo en AWS.
 - `Crispm Suicidios/`: documentos de apoyo CRISP-DM.
 - `output_mineria/`: salidas de comparacion de modelos y metadatos del experimento.
+
+## Metodologia resumida
+
+1. Feature engineering sobre variables clinicas y sociodemograficas.
+2. Definicion de variable objetivo y seleccion de variables predictoras.
+3. Entrenamiento y comparacion de modelos: Regresion Logistica, Arbol de Decision, Random Forest y KNN.
+4. Evaluacion con metricas de clasificacion y matrices de confusion.
 
 ## Tecnologias usadas
 
