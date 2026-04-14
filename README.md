@@ -2,7 +2,6 @@
 
 Autores
 Mateo Gómez Tamayo
-Lorenzo Vargas
 
 
 # Descripción del Proyecto
