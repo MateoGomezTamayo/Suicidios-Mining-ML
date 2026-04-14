@@ -1,44 +1,44 @@
-GUIA DE CRITERIOS DE EVALUACION - TALLER CRISP-DM
-===================================================
-Puntaje Total: 5.0 puntos
+EVALUATION CRITERIA GUIDE - CRISP-DM WORKSHOP
+==============================================
+Total Score: 5.0 points
 
-1. COMPRENSION DEL NEGOCIO (0.5 puntos)
+1. BUSINESS UNDERSTANDING (0.5 points)
 ========================================
-Qué realizar:
-- Definir CLARAMENTE el problema a resolver.
-- Contextualizar el dataset en un escenario real o hipotético.
-- Plantear objetivos de análisis coherentes.
-- Especificar el tipo de problema: clasificación / regresión / segmentación / etc.
-- Justificar POR QUé es relevante resolver este problema.
-- Formular preguntas de negocio que guien el análisis.
+What to do:
+- Clearly define the problem to solve.
+- Contextualize the dataset in a real or hypothetical scenario.
+- State coherent analysis objectives.
+- Specify problem type: classification / regression / segmentation / etc.
+- Justify why solving this problem is relevant.
+- Formulate business questions to guide the analysis.
 
 Checklist:
-[ ] Problema definido claramente
-[ ] Dataset contextualizado
-[ ] Objetivos de análisis planteados
-[ ] Tipo de problema identificado
-[ ] Justificación de relevancia
-[ ] Preguntas de negocio formuladas
+[ ] Problem clearly defined
+[ ] Dataset contextualized
+[ ] Analysis objectives stated
+[ ] Problem type identified
+[ ] Relevance justified
+[ ] Business questions formulated
 
 
-2. COMPRENSION DE LOS DATOS (0.5 puntos)
+2. DATA UNDERSTANDING (0.5 points)
 ==========================================
-Qué realizar:
-- Exploración adecuada del dataset con Python y/o SQL.
-- Describir correctamente LAS VARIABLES:
-  * Tipos de datos
-  * Distribución
-  * Valores únicos
-  * Rangos
-- Identificar patrones iniciales.
-- Detectar posibles relaciones entre variables.
-- Identificar problemas de calidad de datos (nulos, duplicados, inconsistencias, outliers).
-- Usar gráficos y estadísticas descriptivas para sustentar observaciones.
+What to do:
+- Properly explore the dataset with Python and/or SQL.
+- Correctly describe variables:
+   * Data types
+   * Distribution
+   * Unique values
+   * Ranges
+- Identify initial patterns.
+- Detect possible relationships between variables.
+- Identify data quality issues (missing values, duplicates, inconsistencies, outliers).
+- Use charts and descriptive statistics to support findings.
 
-Técnicas esperadas:
+Expected techniques:
 - EDA (Exploratory Data Analysis)
-- Estadísticas descriptivas (media, mediana, desv. estándar, percentiles)
-- Visualizaciones (histogramas, boxplots, scatter plots, distribuciones)
+- Descriptive statistics (mean, median, standard deviation, percentiles)
+- Visualizations (histograms, boxplots, scatter plots, distributions)
 
 Checklist:
 [ ] Dataset explorado con Python/SQL
@@ -49,21 +49,21 @@ Checklist:
 [ ] Gráficos y estadísticas incluidos
 
 
-3. CALIDAD DE DATOS Y VALIDACION (0.5 puntos)
+3. DATA QUALITY AND VALIDATION (0.5 points)
 ===============================================
-Qué realizar:
-- Usar Great Expectations para validación de calidad.
-- Identificar problemas de manera ESTRUCTURADA:
-  * Porcentaje de valores nulos
-  * Porcentaje de duplicados
-  * Valores inválidos
-  * Inconsistencias de formato
-- Cuantificar el impacto de cada problema.
-- Explicar CLARAMENTE las decisiones tomadas:
-  * ¿Eliminar o imputar datos nulos?
-  * ¿Cómo manejar duplicados?
-  * ¿Qué hacer con outliers?
-- Justificar cada decisión tomada.
+What to do:
+- Use Great Expectations for quality validation.
+- Identify issues in a structured way:
+   * Missing-value percentage
+   * Duplicate percentage
+   * Invalid values
+   * Format inconsistencies
+- Quantify each issue's impact.
+- Clearly explain decisions:
+   * Remove or impute nulls?
+   * How to handle duplicates?
+   * What to do with outliers?
+- Justify each decision.
 
 Problemas a detectar:
 - Valores nulos
@@ -81,7 +81,7 @@ Checklist:
 [ ] Justificaciones claras para cada decisión
 
 
-4. PREPARACION DE LOS DATOS (1.0 punto)
+4. DATA PREPARATION (1.0 point)
 =========================================
 Qué realizar:
 - Aplicar correctamente técnicas de limpieza:
@@ -117,7 +117,7 @@ Checklist:
 [ ] Transformaciones explicadas
 
 
-5. MODELADO (1.0 punto)
+5. MODELING (1.0 point)
 ========================
 Qué realizar:
 - Seleccionar y entrenar AL MENOS 4 MODELOS diferentes.
@@ -162,7 +162,7 @@ Checklist:
 [ ] Selección de modelos justificada
 
 
-6. EVALUACION DE MODELOS (0.5 puntos)
+6. MODEL EVALUATION (0.5 points)
 ========================================
 Qué realizar:
 - Evaluar modelos correctamente usando métricas apropiadas.
@@ -206,7 +206,7 @@ Checklist:
 [ ] Limitaciones reconocidas
 
 
-7. INTERPRETACION Y VALOR DE NEGOCIO (0.5 puntos)
+7. INTERPRETATION AND BUSINESS VALUE (0.5 points)
 ===================================================
 Qué realizar:
 - Interpretar resultados en términos del PROBLEMA PLANTEADO.
@@ -232,7 +232,7 @@ Checklist:
 [ ] Vínculos con objetivos iniciales
 
 
-8. COMUNICACION Y PRESENTACION - VIDEO (0.5 puntos)
+8. COMMUNICATION AND VIDEO PRESENTATION (0.5 points)
 =====================================================
 Qué realizar:
 - Duración: 10 MINUTOS EXACTOS

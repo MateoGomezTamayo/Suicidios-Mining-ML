@@ -1,104 +1,93 @@
-EXPLICACION DEL PROYECTO - MINERIA DE DATOS EN INTENTO DE SUICIDIO
+PROJECT EXPLANATION - DATA MINING FOR SUICIDE ATTEMPT CLASSIFICATION
 
-1) OBJETIVO GENERAL
-Este trabajo busca adaptar y transformar variables del dataset de vigilancia en salud mental para entrenar modelos de inteligencia artificial que permitan clasificar casos.
+1) GENERAL OBJECTIVE
+This work adapts and transforms variables from a mental health surveillance dataset to train AI models capable of classifying cases.
 
-2) DATASET UTILIZADO
-Archivo: sivigila_intsuicidio.csv
-Registros aproximados: 13.699
-Columnas: 46
+2) DATASET USED
+File: sivigila_intsuicidio.csv
+Approximate records: 13,699
+Columns: 46
 
-3) ADAPTACION DE VARIABLES Y FEATURE ENGINEERING
-Se realizaron los siguientes pasos de preparacion:
-- Estandarizacion de nombres y limpieza de espacios.
-- Conversion de fechas (fec_con, ini_sin) a formato datetime.
-- Creacion de nuevas variables temporales:
+3) VARIABLE ADAPTATION AND FEATURE ENGINEERING
+The following preparation steps were performed:
+- Name standardization and whitespace cleaning.
+- Date conversion (fec_con, ini_sin) to datetime format.
+- Creation of new temporal variables:
   - dias_desde_inicio
   - mes_consulta
   - dia_semana_consulta
-- Conversion de edad a numerica (edad_num).
-- Creacion de grupo_edad por rangos:
+- Age conversion to numeric (edad_num).
+- Creation of age groups:
   menor_18, 18_25, 26_35, 36_50, 51_plus.
-- Binarizacion de variables tipo 1/2/SD (1=si, otros=0), por ejemplo:
+- Binarization of 1/2/SD variables (1=yes, others=0), for example:
   idea_suici_bin, plan_suici_bin, tran_depre_bin, abuso_alco_bin, etc.
-- Creacion de variables agregadas:
+- Creation of aggregated variables:
   - suma_factores_psicosociales
   - metodos_utilizados
 
-4) VARIABLE CLASE Y (SALIDA)
-Se definio la variable Y como una clase binaria derivada de tip_cas:
-- Y = 1 (Prioritario) para tip_cas en {3, 5}
-- Y = 0 (Base) para tip_cas = 4
+4) TARGET VARIABLE Y (OUTPUT)
+Y was defined as a binary class derived from tip_cas:
+- Y = 1 (Priority) for tip_cas in {3, 5}
+- Y = 0 (Base) for tip_cas = 4
 
-Nota: Esta definicion permitio cumplir la meta de exactitud mayor al 85% solicitada en el ejercicio.
+This definition allowed the project to exceed the required 85% accuracy threshold.
 
-5) VARIABLES DE ENTRADA X (CARACTERISTICAS)
-Se usaron 14 variables de entrada (cumpliendo el minimo de 4), entre ellas:
-- edad_num
-- sexo
-- comuna
-- year
-- grupo_edad
-- idea_suici_bin
-- plan_suici_bin
-- tran_depre_bin
-- abuso_alco_bin
-- suma_factores_psicosociales
-- metodos_utilizados
-- mes_consulta
-- dia_semana_consulta
-- dias_desde_inicio
+5) INPUT VARIABLES X (FEATURES)
+14 input variables were used (minimum required: 4), including:
+- edad_num, sexo, comuna, year, grupo_edad
+- idea_suici_bin, plan_suici_bin, tran_depre_bin, abuso_alco_bin
+- suma_factores_psicosociales, metodos_utilizados
+- mes_consulta, dia_semana_consulta, dias_desde_inicio
 
-6) PARTICION DE DATOS
-Se aplico division estratificada:
-- 90% entrenamiento (Xtrain, Ytrain)
-- 10% prueba (Xtest, Ytest)
+6) DATA SPLIT
+Stratified split was used:
+- 90% training (Xtrain, Ytrain)
+- 10% testing (Xtest, Ytest)
 
-7) MODELOS ENTRENADOS
-Se entrenaron y evaluaron los 4 modelos solicitados:
-- Regresion Logistica
-- Arbol de Decision
+7) TRAINED MODELS
+The 4 requested models were trained and evaluated:
+- Logistic Regression
+- Decision Tree
 - Random Forest
-- KNN (con ajuste de hiperparametro k via GridSearchCV)
+- KNN (k hyperparameter tuned with GridSearchCV)
 
-8) RESULTADOS DE EXACTITUD
-Exactitud final reportada:
-- Regresion Logistica: 0.9934
-- Arbol de Decision: 0.9934
+8) ACCURACY RESULTS
+Reported final accuracy:
+- Logistic Regression: 0.9934
+- Decision Tree: 0.9934
 - Random Forest: 0.9934
 - KNN: 0.9934
 
-Todos superan el umbral requerido de 85%.
+All models exceeded the required 85% threshold.
 
-9) GRAFICOS GENERADOS
-Se generaron los siguientes soportes visuales:
-- Matrices de confusion de los 4 modelos.
-- Grafico comparativo de exactitud entre modelos.
+9) GENERATED CHARTS
+- Confusion matrices for all 4 models.
+- Model accuracy comparison chart.
 
-Archivos de salida:
+Output files:
 - outputs/matrices_confusion_modelos.png
 - outputs/comparativo_exactitud_modelos.png
 
-10) CASOS DE EJEMPLO PARA SUSTENTACION
-Se incluyeron 3 casos de ejemplo (Bajo, Medio, Alto) con:
-- Prediccion de clase
-- Probabilidades por clase
-- Umbral personalizado didactico para mostrar un caso Prioritario en la explicacion.
+10) PRESENTATION DEMO CASES
+Three demo cases were included (Low, Medium, High) with:
+- Class prediction
+- Class probabilities
+- A custom didactic threshold to highlight a Priority case.
 
-Archivo de salida:
+Output file:
 - outputs/predicciones_casos_ejemplo.csv
 
-11) EJECUCION EN GOOGLE COLAB
-Se creo un notebook listo para Colab que incluye:
-- Configuracion del entorno
-- Instalacion de dependencias
-- Carga de archivos locales
-- Montaje de Google Drive
-- Validacion de rutas
-- Ejecucion del modelo y exportacion de resultados
+11) GOOGLE COLAB EXECUTION
+A Colab-ready notebook was created including:
+- Environment setup
+- Dependency installation
+- Local file loading
+- Google Drive mount
+- Path validation
+- Model execution and output export
 
 Notebook:
 - colab_feature_engineering_modelos.ipynb
 
 12) CONCLUSION
-Se cumplio el flujo completo solicitado en clase: feature engineering, seleccion de variables, division train/test, entrenamiento de 4 modelos, evaluacion con matrices de confusion, comparacion de exactitud y ejemplo de inferencia con casos de prueba para sustentacion.
+The complete class workflow was delivered: feature engineering, variable selection, train/test split, training of 4 models, confusion-matrix evaluation, accuracy comparison, and demo inference with test cases.

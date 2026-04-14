@@ -1,60 +1,60 @@
 # Suicidios Mining ML
 
-Proyecto de Big Data y Mineria de Datos para analizar registros de intento de suicidio (SIVIGILA), integrando una arquitectura de datos en AWS (Bronze/Silver/Gold) con un flujo CRISP-DM para modelado de riesgo.
+Big Data and Data Mining project to analyze suicide attempt records (SIVIGILA), integrating an AWS data architecture (Bronze/Silver/Gold) with a CRISP-DM workflow for risk modeling.
 
-## Autor
+## Author
 
 - Mateo Gomez Tamayo
 
-## Descripcion general
+## Overview
 
-El proyecto desarrolla modelos de Machine Learning para clasificacion de casos de intento de suicidio, combinando ingenieria de variables, comparacion de algoritmos y una arquitectura de datos escalable en AWS.
+This project builds Machine Learning models to classify suicide attempt cases by combining feature engineering, model comparison, and a scalable AWS-based data architecture.
 
-## Contenido del proyecto
+## Project Contents
 
-- `crisp_dm_mineria_sivigila.ipynb`: notebook principal de analitica y modelado.
-- `Proyecto_Unificado_BigData_Mineria.md`: documento unificado del anteproyecto.
-- `Big Data AWS/`: scripts ETL, SQL y archivos de costeo en AWS.
-- `Crispm Suicidios/`: documentos de apoyo CRISP-DM.
-- `output_mineria/`: salidas de comparacion de modelos y metadatos del experimento.
+- `crisp_dm_mineria_sivigila.ipynb`: main analytics and modeling notebook.
+- `Proyecto_Unificado_BigData_Mineria.md`: unified formal project document.
+- `Big Data AWS/`: ETL scripts, SQL files, and AWS cost projection files.
+- `Crispm Suicidios/`: CRISP-DM support documents.
+- `output_mineria/`: model comparison outputs and experiment metadata.
 
-## Metodologia resumida
+## Methodology Summary
 
-1. Feature engineering sobre variables clinicas y sociodemograficas.
-2. Definicion de variable objetivo y seleccion de variables predictoras.
-3. Entrenamiento y comparacion de modelos: Regresion Logistica, Arbol de Decision, Random Forest y KNN.
-4. Evaluacion con metricas de clasificacion y matrices de confusion.
+1. Feature engineering over clinical and sociodemographic variables.
+2. Target definition and predictive feature selection.
+3. Training and comparison of models: Logistic Regression, Decision Tree, Random Forest, and KNN.
+4. Evaluation using classification metrics and confusion matrices.
 
-## Tecnologias usadas
+## Technologies
 
 - Python 3.10+
 - Jupyter Notebook
 - NumPy, Pandas
 - Matplotlib, Seaborn
 - Scikit-learn
-- AWS Glue / Athena (scripts y SQL)
+- AWS Glue / Athena (scripts and SQL)
 
-## Estructura Big Data (AWS)
+## Big Data Architecture (AWS)
 
-- Bronze: ingesta de datos crudos.
-- Silver: limpieza y estandarizacion.
-- Gold: tablas analiticas para consulta y modelado.
+- Bronze: raw data ingestion.
+- Silver: cleaning and standardization.
+- Gold: analytics-ready tables for querying and modeling.
 
-## Ejecucion local
+## Local Execution
 
-1. Crear entorno virtual:
+1. Create virtual environment:
    - Windows PowerShell: `python -m venv .venv`
-2. Activar entorno:
+2. Activate environment:
    - Windows PowerShell: `.\.venv\Scripts\Activate.ps1`
-3. Instalar dependencias:
+3. Install dependencies:
    - `pip install -r requirements.txt`
-4. Abrir y ejecutar:
+4. Open and run:
    - `crisp_dm_mineria_sivigila.ipynb`
 
-## Notas sobre datos
+## Data Notes
 
-Este repositorio excluye datasets grandes y artefactos temporales del control de versiones para mantener el historial limpio. Si necesitas versionar archivos de datos pesados, se recomienda Git LFS o almacenamiento externo (por ejemplo S3).
+This repository excludes large datasets and temporary artifacts from version control to keep history clean. If you need to version large data files, use Git LFS or external storage (for example, S3).
 
-## Licencia
+## License
 
-Este proyecto se distribuye bajo licencia MIT. Ver `LICENSE`.
+This project is distributed under the MIT license. See `LICENSE`.
