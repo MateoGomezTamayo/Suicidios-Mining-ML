@@ -1,7 +1,42 @@
 {
-  "Comment": "Pipeline Bronze -> Silver -> Gold con Glue para dataset SIVIGILA",
-  "StartAt": "bronzeToSilverJob",
+  "Comment": "Pipeline DQ -> Bronze -> Silver -> Gold con Glue para dataset SIVIGILA",
+  "StartAt": "dataQualityJob",
   "States": {
+    "dataQualityJob": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::glue:startJobRun.sync",
+      "Parameters": {
+        "JobName": "gx_data_quality_sivigila"
+      },
+      "ResultPath": "$.dataQualityResult",
+      "Retry": [
+        {
+          "ErrorEquals": ["Glue.AWSGlueException", "States.TaskFailed"],
+          "IntervalSeconds": 30,
+          "MaxAttempts": 2,
+          "BackoffRate": 2
+        }
+      ],
+      "Catch": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "Next": "JobFailedByQuality",
+          "ResultPath": "$.error"
+        }
+      ],
+      "Next": "validateDataQualityResult"
+    },
+    "validateDataQualityResult": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Variable": "$.dataQualityResult.JobRunState",
+          "StringEquals": "SUCCEEDED",
+          "Next": "bronzeToSilverJob"
+        }
+      ],
+      "Default": "JobFailedByQuality"
+    },
     "bronzeToSilverJob": {
       "Type": "Task",
       "Resource": "arn:aws:states:::glue:startJobRun.sync",
@@ -30,7 +65,7 @@
       "Type": "Task",
       "Resource": "arn:aws:states:::glue:startJobRun.sync",
       "Parameters": {
-        "JobName": "silver_to_gold"
+        "JobName": "silver_to_gold.py"
       },
       "ResultPath": "$.silverToGoldResult",
       "Retry": [
@@ -53,6 +88,11 @@
     "PipelineSuccess": {
       "Type": "Succeed",
       "Comment": "Pipeline completado: Bronze -> Silver -> Gold"
+    },
+    "JobFailedByQuality": {
+      "Type": "Fail",
+      "Error": "DataQualityFailed",
+      "Cause": "La validacion de Great Expectations no cumplio todas las expectativas requeridas."
     },
     "JobFailed": {
       "Type": "Fail",
