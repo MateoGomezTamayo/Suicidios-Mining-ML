@@ -103,24 +103,16 @@ jobs:
           aws-region:            us-east-1
 
       - name: Subir CSV SIVIGILA al Bronze
-        run: |
-          aws s3 cp sivigila_intsuicidio.csv \
-            s3://$BRONZE_BUCKET/sivigila_intsuicidio.csv
+        run: aws s3 cp sivigila_intsuicidio.csv "s3://${{ env.BRONZE_BUCKET }}/sivigila_intsuicidio.csv"
 
       - name: Subir script ETL Bronze-Silver
-        run: |
-          aws s3 cp "Big Data AWS/glue_bronze_to_silver_sales.py" \
-            s3://$BRONZE_BUCKET/scripts/etl_sivigila.py
+        run: aws s3 cp "Big Data AWS/glue_bronze_to_silver_sales.py" "s3://${{ env.BRONZE_BUCKET }}/scripts/etl_sivigila.py"
 
       - name: Subir script ETL Silver-Gold
-        run: |
-          aws s3 cp "Big Data AWS/glue_silver_to_gold_sivigila.py" \
-            s3://$BRONZE_BUCKET/scripts/etl_sivigila_gold.py
+        run: aws s3 cp "Big Data AWS/glue_silver_to_gold_sivigila.py" "s3://${{ env.BRONZE_BUCKET }}/scripts/etl_sivigila_gold.py"
 
       - name: Verificar archivos subidos
-        run: |
-          echo "Contenido del bucket Bronze:"
-          aws s3 ls s3://$BRONZE_BUCKET/ --recursive
+        run: aws s3 ls "s3://${{ env.BRONZE_BUCKET }}/" --recursive
 
   # ─────────────────────────────────────────────────────────
   # JOB 3: Glue ETL Bronze - Silver
@@ -141,9 +133,9 @@ jobs:
       - name: Lanzar Glue job Bronze-Silver
         id: start_job
         run: |
-          ARGS="--input_path=s3://$BRONZE_BUCKET/sivigila_intsuicidio.csv,--output_path=s3://$SILVER_BUCKET/sivigila/"
+          ARGS="--input_path=s3://${{ env.BRONZE_BUCKET }}/sivigila_intsuicidio.csv,--output_path=s3://${{ env.SILVER_BUCKET }}/sivigila/"
           RUN_ID=$(aws glue start-job-run \
-            --job-name "$JOB_BRONZE_SILVER" \
+            --job-name "${{ env.JOB_BRONZE_SILVER }}" \
             --arguments "$ARGS" \
             --query "JobRunId" \
             --output text)
@@ -156,7 +148,7 @@ jobs:
           echo "Monitoreando job: $RUN_ID"
           while true; do
             STATE=$(aws glue get-job-run \
-              --job-name "$JOB_BRONZE_SILVER" \
+              --job-name "${{ env.JOB_BRONZE_SILVER }}" \
               --run-id "$RUN_ID" \
               --query "JobRun.JobRunState" \
               --output text)
@@ -169,7 +161,7 @@ jobs:
               FAILED|ERROR|TIMEOUT|STOPPED)
                 echo "Job fallido con estado: $STATE"
                 aws glue get-job-run \
-                  --job-name "$JOB_BRONZE_SILVER" \
+                  --job-name "${{ env.JOB_BRONZE_SILVER }}" \
                   --run-id "$RUN_ID" \
                   --query "JobRun.ErrorMessage" \
                   --output text
@@ -201,9 +193,9 @@ jobs:
       - name: Lanzar Glue job Silver-Gold
         id: start_job
         run: |
-          ARGS="--input_path=s3://$SILVER_BUCKET/sivigila/,--output_gold_resumen=s3://$GOLD_BUCKET/sivigila_resumen_comuna/,--output_gold_riesgo=s3://$GOLD_BUCKET/sivigila_perfil_riesgo/"
+          ARGS="--input_path=s3://${{ env.SILVER_BUCKET }}/sivigila/,--output_gold_resumen=s3://${{ env.GOLD_BUCKET }}/sivigila_resumen_comuna/,--output_gold_riesgo=s3://${{ env.GOLD_BUCKET }}/sivigila_perfil_riesgo/"
           RUN_ID=$(aws glue start-job-run \
-            --job-name "$JOB_SILVER_GOLD" \
+            --job-name "${{ env.JOB_SILVER_GOLD }}" \
             --arguments "$ARGS" \
             --query "JobRunId" \
             --output text)
@@ -216,7 +208,7 @@ jobs:
           echo "Monitoreando job: $RUN_ID"
           while true; do
             STATE=$(aws glue get-job-run \
-              --job-name "$JOB_SILVER_GOLD" \
+              --job-name "${{ env.JOB_SILVER_GOLD }}" \
               --run-id "$RUN_ID" \
               --query "JobRun.JobRunState" \
               --output text)
@@ -229,7 +221,7 @@ jobs:
               FAILED|ERROR|TIMEOUT|STOPPED)
                 echo "Job fallido con estado: $STATE"
                 aws glue get-job-run \
-                  --job-name "$JOB_SILVER_GOLD" \
+                  --job-name "${{ env.JOB_SILVER_GOLD }}" \
                   --run-id "$RUN_ID" \
                   --query "JobRun.ErrorMessage" \
                   --output text
@@ -243,6 +235,4 @@ jobs:
           done
 
       - name: Verificar tablas Gold creadas
-        run: |
-          echo "Tablas en Gold:"
-          aws s3 ls s3://$GOLD_BUCKET/ --recursive
+        run: aws s3 ls "s3://${{ env.GOLD_BUCKET }}/" --recursive
