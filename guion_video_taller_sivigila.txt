@@ -1,0 +1,210 @@
+GUIA DE EXPOSICION POR PARTES DEL CODIGO - TALLER SIVIGILA
+Duracion sugerida: 9 a 11 minutos
+
+OBJETIVO DE ESTA GUIA
+Este guion esta organizado por bloques reales del codigo para que puedas exponer linea por linea sin perder el hilo tecnico.
+
+====================================================
+PARTE 1 - IMPORTS Y DEPENDENCIAS
+====================================================
+CODIGO A MOSTRAR (GX_Glue_Code.py):
+import sys
+from pyspark.context import SparkContext
+from pyspark.sql import functions as F
+from awsglue.context import GlueContext
+from awsglue.job import Job
+from awsglue.utils import getResolvedOptions
+
+QUE DECIR:
+En esta primera parte importamos las librerias base de Glue y Spark. sys y getResolvedOptions nos permiten leer argumentos del job, SparkContext y GlueContext inicializan el entorno distribuido, y functions de Spark nos ayudan a construir todas las validaciones de calidad.
+
+====================================================
+PARTE 2 - INICIALIZACION DEL JOB DE GLUE
+====================================================
+CODIGO A MOSTRAR (GX_Glue_Code.py):
+args = getResolvedOptions(sys.argv, ["JOB_NAME"])
+
+sc = SparkContext.getOrCreate()
+glueContext = GlueContext(sc)
+spark = glueContext.spark_session
+
+job = Job(glueContext)
+job.init(args["JOB_NAME"], args)
+
+QUE DECIR:
+Aqui iniciamos formalmente el job. Leemos el parametro JOB_NAME, levantamos el contexto de Spark y creamos el objeto Job de Glue. Esto es clave porque permite ejecutar en AWS Glue con control de ciclo de vida y cierre correcto al final.
+
+====================================================
+PARTE 3 - LECTURA DEL DATASET DESDE S3
+====================================================
+CODIGO A MOSTRAR (GX_Glue_Code.py):
+raw_df = (
+    spark.read
+    .option("header", True)
+    .option("sep", ";")
+    .csv("s3://datalake-bronze-039781381637/sales/sivigila_intsuicidio.csv")
+)
+
+QUE DECIR:
+En este bloque leemos el archivo fuente desde la capa Bronze en S3. Indicamos que el CSV tiene cabecera y separador punto y coma. Este es el insumo que se valida antes de permitir cualquier transformacion.
+
+====================================================
+PARTE 4 - NORMALIZACION Y TIPADO DE COLUMNAS
+====================================================
+CODIGO A MOSTRAR (GX_Glue_Code.py):
+df = (
+    raw_df
+    .withColumn("id", F.col("id").cast("int"))
+    .withColumn("edad", F.col("edad").cast("int"))
+    .withColumn("year", F.col("year").cast("int"))
+    .withColumn("sexo", F.upper(F.trim(F.col("sexo"))))
+    .withColumn("evento", F.trim(F.col("evento")))
+    .withColumn("tip_cas", F.trim(F.col("tip_cas")))
+)
+
+QUE DECIR:
+Aqui hacemos preparacion de calidad: convertimos id, edad y year a enteros, y limpiamos texto con trim y mayusculas para evitar falsos errores por espacios o formato.
+
+====================================================
+PARTE 5 - ESTRUCTURA DE LAS EXPECTATIVAS
+====================================================
+CODIGO A MOSTRAR (GX_Glue_Code.py):
+total_rows = df.count()
+expectation_results = []
+
+
+def add_expectation(name, is_success):
+    expectation_results.append({"expectation": name, "success": bool(is_success)})
+
+
+def ratio(valid_count, all_count):
+    if all_count == 0:
+        return 0.0
+    return float(valid_count) / float(all_count)
+
+QUE DECIR:
+Esta parte define la estructura de evaluacion. Guardamos resultados en una lista, creamos una funcion para registrar cada expectativa y otra para calcular porcentaje de cumplimiento.
+
+====================================================
+PARTE 6 - EXPECTATIVAS 1 A 5
+====================================================
+CODIGO A MOSTRAR (GX_Glue_Code.py):
+add_expectation("row_count_greater_than_zero", total_rows >= 1)
+
+id_not_null_count = df.filter(F.col("id").isNotNull()).count()
+add_expectation("id_not_null_100", ratio(id_not_null_count, total_rows) >= 1.0)
+
+distinct_id_count = df.select("id").distinct().count()
+add_expectation("id_unique", distinct_id_count == total_rows)
+
+edad_not_null_count = df.filter(F.col("edad").isNotNull()).count()
+add_expectation("edad_not_null_99pct", ratio(edad_not_null_count, total_rows) >= 0.99)
+
+edad_valid_count = df.filter(F.col("edad").between(0, 120)).count()
+add_expectation("edad_between_0_120_99pct", ratio(edad_valid_count, total_rows) >= 0.99)
+
+QUE DECIR:
+Las primeras cinco expectativas validan existencia del dataset, integridad del id y calidad de la variable edad. Aqui controlamos vacios, nulos, duplicados y rangos invalidos.
+
+====================================================
+PARTE 7 - EXPECTATIVAS 6 A 10
+====================================================
+CODIGO A MOSTRAR (GX_Glue_Code.py):
+sexo_valid_count = df.filter(F.col("sexo").isin("F", "M")).count()
+add_expectation("sexo_in_set_F_M_99pct", ratio(sexo_valid_count, total_rows) >= 0.99)
+
+year_not_null_count = df.filter(F.col("year").isNotNull()).count()
+add_expectation("year_not_null_100", ratio(year_not_null_count, total_rows) >= 1.0)
+
+year_valid_count = df.filter(F.col("year").between(2010, 2030)).count()
+add_expectation("year_between_2010_2030_100", ratio(year_valid_count, total_rows) >= 1.0)
+
+evento_valid_count = df.filter(F.col("evento") == "INTENTO DE SUICIDIO").count()
+add_expectation("evento_intento_suicidio_99pct", ratio(evento_valid_count, total_rows) >= 0.99)
+
+tip_valid_count = df.filter(F.col("tip_cas").isin("1", "2", "3", "4", "5")).count()
+add_expectation("tip_cas_in_set_99pct", ratio(tip_valid_count, total_rows) >= 0.99)
+
+QUE DECIR:
+Las ultimas cinco expectativas controlan consistencia de catalogos y coherencia del dominio: sexo, anio, tipo de evento y codigo de caso.
+
+====================================================
+PARTE 8 - RESUMEN DE RESULTADOS Y EXITO GLOBAL
+====================================================
+CODIGO A MOSTRAR (GX_Glue_Code.py):
+successful_expectations = sum(1 for e in expectation_results if e["success"])
+all_success = successful_expectations == 10
+
+print("===== RESULTADOS EXPECTATIVAS DQ =====")
+for result in expectation_results:
+    print(f"{result['expectation']}: {result['success']}")
+
+print(
+    f"Expectativas evaluadas: 10 | "
+    f"Exitosas: {successful_expectations} | "
+    f"Success global: {all_success}"
+)
+
+QUE DECIR:
+Aqui consolidamos la evaluacion. El criterio final es estricto: solo hay exito global si las 10 expectativas cumplen.
+
+====================================================
+PARTE 9 - CORTE DEL PIPELINE SI FALLA CALIDAD
+====================================================
+CODIGO A MOSTRAR (GX_Glue_Code.py):
+if not all_success:
+    failed = [e["expectation"] for e in expectation_results if not e["success"]]
+    raise Exception(f"Data Quality FAILED: no se cumplieron todas las expectativas. Fallaron: {failed}")
+
+job.commit()
+
+QUE DECIR:
+Este es el bloque mas importante. Si no cumplen todas las expectativas, el job lanza excepcion y termina en error. Si todo sale bien, hace commit y reporta exito.
+
+====================================================
+PARTE 10 - ORQUESTACION EN STEP FUNCTION
+====================================================
+CODIGO A MOSTRAR (step_function_pipeline_sivigila.json):
+"StartAt": "dataQualityJob"
+
+"dataQualityJob": {
+  "Type": "Task",
+  "Resource": "arn:aws:states:::glue:startJobRun.sync",
+  "Parameters": { "JobName": "gx_data_quality_sivigila" },
+  "Next": "validateDataQualityResult"
+}
+
+"validateDataQualityResult": {
+  "Type": "Choice",
+  "Choices": [
+    {
+      "Variable": "$.dataQualityResult.JobRunState",
+      "StringEquals": "SUCCEEDED",
+      "Next": "bronzeToSilverJob"
+    }
+  ],
+  "Default": "JobFailedByQuality"
+}
+
+QUE DECIR:
+La Step Function arranca por calidad. Si el job retorna SUCCEEDED, continua a Bronze-Silver y luego Silver-Gold. Si falla calidad, termina en JobFailedByQuality. Asi evitamos que datos malos lleguen a capas analiticas.
+
+====================================================
+PARTE 11 - DEMO EN VIVO (QUE MOSTRAR)
+====================================================
+QUE MOSTRAR EN PANTALLA:
+1) Consola de Step Functions con la state machine execution-my-jobs.
+2) Boton Start execution.
+3) Flujo de estados en tiempo real.
+4) Resultado de dataQualityJob.
+5) Transicion a bronzeToSilverJob y silverToGoldJob, o corte en JobFailedByQuality.
+
+QUE DECIR:
+En esta demo se ve la compuerta de calidad en accion. Primero corre calidad, luego la decision automatica define si el pipeline continua o se detiene.
+
+====================================================
+CIERRE FINAL (30-40 SEGUNDOS)
+====================================================
+En conclusion, estas 10 expectativas convierten la calidad en un requisito de entrada, no en una revision posterior. La Step Function automatiza esa regla y protege todo el pipeline Bronze-Silver-Gold.
+
+FIN

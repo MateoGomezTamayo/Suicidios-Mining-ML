@@ -6,7 +6,7 @@ from awsglue.job import Job
 from awsglue.utils import getResolvedOptions
 
 # Glue requiere JOB_NAME como argumento del job
-args = getResolvedOptions(sys.argv, ["JOB_NAME"])
+args = getResolvedOptions(sys.argv, ["JOB_NAME", "input_path", "output_path"])
 
 sc = SparkContext.getOrCreate()
 glue_context = GlueContext(sc)
@@ -15,9 +15,8 @@ spark = glue_context.spark_session
 job = Job(glue_context)
 job.init(args["JOB_NAME"], args)
 
-# Dataset real reportado por el usuario
-input_path = "s3://datalake-bronze-039781381637/sales/sivigila_intsuicidio.csv"
-output_path = "s3://datalake-silver-039781381637/sales/sivigila_intsuicidio/"
+input_path  = args["input_path"]
+output_path = args["output_path"]
 
 # Detecta el separador real de la cabecera para evitar leer todo en una sola columna.
 header_line = sc.textFile(input_path, minPartitions=1).first()

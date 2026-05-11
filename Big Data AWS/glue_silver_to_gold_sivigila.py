@@ -5,7 +5,7 @@ from awsglue.context import GlueContext
 from awsglue.job import Job
 from awsglue.utils import getResolvedOptions
 
-args = getResolvedOptions(sys.argv, ["JOB_NAME"])
+args = getResolvedOptions(sys.argv, ["JOB_NAME", "input_path", "output_gold_resumen", "output_gold_riesgo"])
 
 sc = SparkContext.getOrCreate()
 glue_context = GlueContext(sc)
@@ -14,9 +14,9 @@ spark = glue_context.spark_session
 job = Job(glue_context)
 job.init(args["JOB_NAME"], args)
 
-input_path  = "s3://datalake-silver-039781381637/sales/sivigila_intsuicidio/"
-output_gold_resumen  = "s3://datalake-gold-039781381637/sales/sivigila_resumen_comuna/"
-output_gold_riesgo   = "s3://datalake-gold-039781381637/sales/sivigila_perfil_riesgo/"
+input_path           = args["input_path"]
+output_gold_resumen  = args["output_gold_resumen"]
+output_gold_riesgo   = args["output_gold_riesgo"]
 
 # ─────────────────────────────────────────
 # Leer Silver (Parquet)

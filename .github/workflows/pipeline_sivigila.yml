@@ -1,0 +1,233 @@
+name: Pipeline SIVIGILA — Terraform + ETL + Glue
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  workflow_dispatch:          # permite ejecutar manualmente desde GitHub
+
+env:
+  AWS_REGION:       us-east-1
+  TF_WORKING_DIR:   Terraform/gestion_direccion_big_data/terraform/envs/dev
+  BRONZE_BUCKET:    datalake-dev-raw-039781381637
+  SILVER_BUCKET:    datalake-dev-silver-039781381637
+  GOLD_BUCKET:      datalake-dev-gold-039781381637
+  JOB_BRONZE_SILVER: datalake-dev-sivigila-etl
+  JOB_SILVER_GOLD:   datalake-dev-sivigila-gold-etl
+
+jobs:
+  # ─────────────────────────────────────────────────────────
+  # JOB 1: Infraestructura con Terraform
+  # ─────────────────────────────────────────────────────────
+  terraform:
+    name: "Terraform — Infraestructura AWS"
+    runs-on: ubuntu-latest
+
+    outputs:
+      bronze_bucket: ${{ steps.tf_outputs.outputs.bronze_bucket }}
+
+    defaults:
+      run:
+        working-directory: ${{ env.TF_WORKING_DIR }}
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Configurar credenciales AWS
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id:     ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region:            ${{ env.AWS_REGION }}
+
+      - name: Instalar Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.7.5"
+          terraform_wrapper: false
+
+      - name: Terraform Init
+        run: terraform init
+
+      - name: Terraform Validate
+        run: terraform validate
+
+      - name: Terraform Plan
+        run: terraform plan -var-file="dev.tfvars" -out=tfplan
+
+      - name: Terraform Apply
+        run: terraform apply -auto-approve tfplan
+
+      - name: Obtener outputs de Terraform
+        id: tf_outputs
+        run: |
+          echo "bronze_bucket=$(terraform output -raw bronze_bucket_name)" >> $GITHUB_OUTPUT
+
+  # ─────────────────────────────────────────────────────────
+  # JOB 2: Subir datos y scripts al bucket Bronze
+  # ─────────────────────────────────────────────────────────
+  upload:
+    name: "Upload — CSV y scripts ETL a S3 Bronze"
+    runs-on: ubuntu-latest
+    needs: terraform
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Configurar credenciales AWS
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id:     ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region:            ${{ env.AWS_REGION }}
+
+      - name: Subir CSV SIVIGILA al Bronze
+        run: |
+          aws s3 cp sivigila_intsuicidio.csv \
+            s3://${{ env.BRONZE_BUCKET }}/sivigila_intsuicidio.csv
+
+      - name: Subir script ETL Bronze→Silver
+        run: |
+          aws s3 cp "Big Data AWS/glue_bronze_to_silver_sales.py" \
+            s3://${{ env.BRONZE_BUCKET }}/scripts/etl_sivigila.py
+
+      - name: Subir script ETL Silver→Gold
+        run: |
+          aws s3 cp "Big Data AWS/glue_silver_to_gold_sivigila.py" \
+            s3://${{ env.BRONZE_BUCKET }}/scripts/etl_sivigila_gold.py
+
+      - name: Verificar archivos subidos
+        run: |
+          echo "Contenido del bucket Bronze:"
+          aws s3 ls s3://${{ env.BRONZE_BUCKET }}/ --recursive
+
+  # ─────────────────────────────────────────────────────────
+  # JOB 3: Glue ETL Bronze → Silver
+  # ─────────────────────────────────────────────────────────
+  glue_bronze_to_silver:
+    name: "Glue — Bronze → Silver"
+    runs-on: ubuntu-latest
+    needs: upload
+
+    steps:
+      - name: Configurar credenciales AWS
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id:     ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region:            ${{ env.AWS_REGION }}
+
+      - name: Lanzar Glue job Bronze→Silver
+        id: start_job
+        run: |
+          RUN_ID=$(aws glue start-job-run \
+            --job-name ${{ env.JOB_BRONZE_SILVER }} \
+            --arguments \
+              "--input_path=s3://${{ env.BRONZE_BUCKET }}/sivigila_intsuicidio.csv,\
+--output_path=s3://${{ env.SILVER_BUCKET }}/sivigila/" \
+            --query "JobRunId" \
+            --output text)
+          echo "run_id=$RUN_ID" >> $GITHUB_OUTPUT
+          echo "Job lanzado con ID: $RUN_ID"
+
+      - name: Esperar a que el job termine
+        run: |
+          RUN_ID="${{ steps.start_job.outputs.run_id }}"
+          echo "Monitoreando job: $RUN_ID"
+          while true; do
+            STATE=$(aws glue get-job-run \
+              --job-name ${{ env.JOB_BRONZE_SILVER }} \
+              --run-id "$RUN_ID" \
+              --query "JobRun.JobRunState" \
+              --output text)
+            echo "Estado actual: $STATE"
+            case "$STATE" in
+              SUCCEEDED)
+                echo "Job Bronze→Silver completado exitosamente."
+                exit 0
+                ;;
+              FAILED|ERROR|TIMEOUT|STOPPED)
+                echo "Job fallido con estado: $STATE"
+                aws glue get-job-run \
+                  --job-name ${{ env.JOB_BRONZE_SILVER }} \
+                  --run-id "$RUN_ID" \
+                  --query "JobRun.ErrorMessage" \
+                  --output text
+                exit 1
+                ;;
+              *)
+                echo "Esperando... (estado: $STATE)"
+                sleep 30
+                ;;
+            esac
+          done
+
+  # ─────────────────────────────────────────────────────────
+  # JOB 4: Glue ETL Silver → Gold
+  # ─────────────────────────────────────────────────────────
+  glue_silver_to_gold:
+    name: "Glue — Silver → Gold"
+    runs-on: ubuntu-latest
+    needs: glue_bronze_to_silver
+
+    steps:
+      - name: Configurar credenciales AWS
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id:     ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region:            ${{ env.AWS_REGION }}
+
+      - name: Lanzar Glue job Silver→Gold
+        id: start_job
+        run: |
+          RUN_ID=$(aws glue start-job-run \
+            --job-name ${{ env.JOB_SILVER_GOLD }} \
+            --arguments \
+              "--input_path=s3://${{ env.SILVER_BUCKET }}/sivigila/,\
+--output_gold_resumen=s3://${{ env.GOLD_BUCKET }}/sivigila_resumen_comuna/,\
+--output_gold_riesgo=s3://${{ env.GOLD_BUCKET }}/sivigila_perfil_riesgo/" \
+            --query "JobRunId" \
+            --output text)
+          echo "run_id=$RUN_ID" >> $GITHUB_OUTPUT
+          echo "Job lanzado con ID: $RUN_ID"
+
+      - name: Esperar a que el job termine
+        run: |
+          RUN_ID="${{ steps.start_job.outputs.run_id }}"
+          echo "Monitoreando job: $RUN_ID"
+          while true; do
+            STATE=$(aws glue get-job-run \
+              --job-name ${{ env.JOB_SILVER_GOLD }} \
+              --run-id "$RUN_ID" \
+              --query "JobRun.JobRunState" \
+              --output text)
+            echo "Estado actual: $STATE"
+            case "$STATE" in
+              SUCCEEDED)
+                echo "Job Silver→Gold completado exitosamente."
+                exit 0
+                ;;
+              FAILED|ERROR|TIMEOUT|STOPPED)
+                echo "Job fallido con estado: $STATE"
+                aws glue get-job-run \
+                  --job-name ${{ env.JOB_SILVER_GOLD }} \
+                  --run-id "$RUN_ID" \
+                  --query "JobRun.ErrorMessage" \
+                  --output text
+                exit 1
+                ;;
+              *)
+                echo "Esperando... (estado: $STATE)"
+                sleep 30
+                ;;
+            esac
+          done
+
+      - name: Verificar tablas Gold creadas
+        run: |
+          echo "Tablas en Gold:"
+          aws s3 ls s3://${{ env.GOLD_BUCKET }}/ --recursive

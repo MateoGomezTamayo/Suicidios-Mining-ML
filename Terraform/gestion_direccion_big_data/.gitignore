@@ -1,0 +1,28 @@
+# Terraform cache y estado local
+**/.terraform/
+**/.terraform.lock.hcl
+
+# Estado remoto (nunca commitear estado local)
+**/*.tfstate
+**/*.tfstate.backup
+
+# Variables con secretos
+*.auto.tfvars
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# Credenciales AWS locales
+.aws/
+*.env
+
+# Binario terraform (esta en Terraform/Terraform/)
+terraform.exe
+
+# Archivos de plan binario
+*.tfplan
+
+# OS / IDE
+.DS_Store
+Thumbs.db

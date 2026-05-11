@@ -36,6 +36,10 @@ Thumbs.db
 # Project specific large data
 Big Data AWS/sivigila_intsuicidio.csv
 
+# Terraform binary (too large for GitHub)
+Terraform/Terraform/terraform.exe
+terraform.exe
+
 # Optional generated outputs
 output_mineria/*.png
 output_mineria/*.jpg
