@@ -15,7 +15,7 @@ resource "aws_iam_role" "glue_role" {
   })
 }
 
-# Policy S3 (bronze → silver + temp)
+# Policy S3 (bronze -> silver + temp)
 resource "aws_iam_policy" "glue_s3_policy" {
   name = "${var.project}-${var.env}-glue-s3-policy"
 
@@ -74,6 +74,10 @@ resource "aws_iam_policy" "glue_s3_policy" {
       }
     ]
   })
+
+  lifecycle {
+    ignore_changes = [policy]
+  }
 }
 
 

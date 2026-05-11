@@ -56,10 +56,25 @@ jobs:
         run: terraform validate
 
       - name: Terraform Plan
-        run: terraform plan -var-file="dev.tfvars" -out=tfplan
+        id: plan
+        run: |
+          set +e
+          terraform plan -refresh=false -var-file="dev.tfvars" -detailed-exitcode -out=tfplan
+          PLAN_EXIT=$?
+          echo "plan_exit=$PLAN_EXIT" >> $GITHUB_OUTPUT
+          if [ $PLAN_EXIT -eq 1 ]; then
+            echo "Error en terraform plan"
+            exit 1
+          fi
+          echo "Plan OK (exit $PLAN_EXIT)"
 
       - name: Terraform Apply
+        if: steps.plan.outputs.plan_exit == '2'
         run: terraform apply -auto-approve tfplan
+
+      - name: Sin cambios detectados
+        if: steps.plan.outputs.plan_exit == '0'
+        run: echo "Infraestructura ya actualizada, sin cambios que aplicar."
 
       - name: Obtener outputs de Terraform
         id: tf_outputs
