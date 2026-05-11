@@ -15,6 +15,7 @@ env:
   GOLD_BUCKET:      datalake-dev-gold-039781381637
   JOB_BRONZE_SILVER: datalake-dev-sivigila-etl
   JOB_SILVER_GOLD:   datalake-dev-sivigila-gold-etl
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
   # ─────────────────────────────────────────────────────────
@@ -63,7 +64,9 @@ jobs:
       - name: Obtener outputs de Terraform
         id: tf_outputs
         run: |
-          echo "bronze_bucket=$(terraform output -raw bronze_bucket_name)" >> $GITHUB_OUTPUT
+          BRONZE=$(terraform output -raw bronze_bucket_name 2>/dev/null || echo "datalake-dev-raw-039781381637")
+          echo "bronze_bucket=$BRONZE" >> $GITHUB_OUTPUT
+          echo "Bronze bucket: $BRONZE"
 
   # ─────────────────────────────────────────────────────────
   # JOB 2: Subir datos y scripts al bucket Bronze
