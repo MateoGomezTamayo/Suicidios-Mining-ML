@@ -1,4 +1,13 @@
 terraform {
+  required_version = ">= 1.7.0"
+
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "~> 6.44"
+    }
+  }
+
   backend "s3" {
     bucket  = "datalake-terraform-state-039781381637"
     key     = "dev/terraform.tfstate"

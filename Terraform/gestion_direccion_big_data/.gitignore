@@ -1,6 +1,8 @@
 # Terraform cache y estado local
 **/.terraform/
-**/.terraform.lock.hcl
+
+# Lock file: SÍ debe estar en git para versiones consistentes en CI
+# **/.terraform.lock.hcl  <-- NO ignorar
 
 # Estado remoto (nunca commitear estado local)
 **/*.tfstate
