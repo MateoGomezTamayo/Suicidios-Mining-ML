@@ -10,8 +10,6 @@ resource "aws_iam_role" "sfn_role" {
       Action    = "sts:AssumeRole"
     }]
   })
-
-  tags = var.tags
 }
 
 resource "aws_iam_policy" "sfn_glue_policy" {
@@ -155,6 +153,4 @@ resource "aws_sfn_state_machine" "sivigila_pipeline" {
       }
     }
   })
-
-  tags = var.tags
 }
