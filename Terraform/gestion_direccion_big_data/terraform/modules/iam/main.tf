@@ -15,9 +15,10 @@ resource "aws_iam_role" "glue_role" {
   })
 }
 
-# Policy S3 (bronze -> silver + temp)
+# Policy S3 (bronze -> silver -> gold + temp)
+# Nombre -v2 para forzar delete+recreate via iam:CreatePolicy (sin necesitar iam:CreatePolicyVersion)
 resource "aws_iam_policy" "glue_s3_policy" {
-  name = "${var.project}-${var.env}-glue-s3-policy"
+  name = "${var.project}-${var.env}-glue-s3-policy-v2"
 
   policy = jsonencode({
     Version = "2012-10-17"
@@ -36,16 +37,9 @@ resource "aws_iam_policy" "glue_s3_policy" {
       {
         Effect = "Allow"
         Action = [
-          "s3:PutObject"
-        ]
-        Resource = [
-          "arn:aws:s3:::${var.silver_bucket}/*"
-        ]
-      },
-      {
-        Effect = "Allow"
-        Action = [
           "s3:GetObject",
+          "s3:PutObject",
+          "s3:DeleteObject",
           "s3:ListBucket"
         ]
         Resource = [
@@ -56,9 +50,13 @@ resource "aws_iam_policy" "glue_s3_policy" {
       {
         Effect = "Allow"
         Action = [
-          "s3:PutObject"
+          "s3:GetObject",
+          "s3:PutObject",
+          "s3:DeleteObject",
+          "s3:ListBucket"
         ]
         Resource = [
+          "arn:aws:s3:::${var.gold_bucket}",
           "arn:aws:s3:::${var.gold_bucket}/*"
         ]
       },
@@ -66,7 +64,8 @@ resource "aws_iam_policy" "glue_s3_policy" {
         Effect = "Allow"
         Action = [
           "s3:GetObject",
-          "s3:PutObject"
+          "s3:PutObject",
+          "s3:DeleteObject"
         ]
         Resource = [
           "arn:aws:s3:::${var.temp_bucket}/*"
@@ -74,10 +73,6 @@ resource "aws_iam_policy" "glue_s3_policy" {
       }
     ]
   })
-
-  lifecycle {
-    ignore_changes = [policy]
-  }
 }
 
 
