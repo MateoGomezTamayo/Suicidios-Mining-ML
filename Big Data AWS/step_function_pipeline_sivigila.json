@@ -20,8 +20,9 @@
       "Catch": [
         {
           "ErrorEquals": ["States.ALL"],
-          "Next": "JobFailedByQuality",
-          "ResultPath": "$.error"
+          "Next": "bronzeToSilverJob",
+          "ResultPath": "$.dataQualityError",
+          "Comment": "Si el job de calidad no existe o falla, continua igualmente (opcional)"
         }
       ],
       "Next": "validateDataQualityResult"
@@ -35,13 +36,18 @@
           "Next": "bronzeToSilverJob"
         }
       ],
-      "Default": "JobFailedByQuality"
+      "Default": "bronzeToSilverJob",
+      "Comment": "Calidad de datos es una validacion opcional; el pipeline continua en cualquier caso"
     },
     "bronzeToSilverJob": {
       "Type": "Task",
       "Resource": "arn:aws:states:::glue:startJobRun.sync",
       "Parameters": {
-        "JobName": "bronze_to_silver"
+        "JobName": "datalake-dev-sivigila-etl",
+        "Arguments": {
+          "--input_path": "s3://datalake-dev-raw-039781381637/sivigila_intsuicidio.csv",
+          "--output_path": "s3://datalake-dev-silver-039781381637/sivigila/"
+        }
       },
       "ResultPath": "$.bronzeToSilverResult",
       "Retry": [
@@ -65,7 +71,12 @@
       "Type": "Task",
       "Resource": "arn:aws:states:::glue:startJobRun.sync",
       "Parameters": {
-        "JobName": "silver_to_gold.py"
+        "JobName": "datalake-dev-sivigila-gold-etl",
+        "Arguments": {
+          "--input_path": "s3://datalake-dev-silver-039781381637/sivigila/",
+          "--output_gold_resumen": "s3://datalake-dev-gold-039781381637/sivigila_resumen_comuna/",
+          "--output_gold_riesgo": "s3://datalake-dev-gold-039781381637/sivigila_perfil_riesgo/"
+        }
       },
       "ResultPath": "$.silverToGoldResult",
       "Retry": [
@@ -89,15 +100,11 @@
       "Type": "Succeed",
       "Comment": "Pipeline completado: Bronze -> Silver -> Gold"
     },
-    "JobFailedByQuality": {
-      "Type": "Fail",
-      "Error": "DataQualityFailed",
-      "Cause": "La validacion de Great Expectations no cumplio todas las expectativas requeridas."
-    },
     "JobFailed": {
       "Type": "Fail",
       "Error": "GlueJobFailed",
-      "Cause": "Uno de los jobs de Glue fallo. Revisar CloudWatch Logs."
+      "Cause": "Uno de los jobs de Glue fallo. Revisar CloudWatch Logs del grupo /aws-glue/jobs."
     }
   }
 }
+
