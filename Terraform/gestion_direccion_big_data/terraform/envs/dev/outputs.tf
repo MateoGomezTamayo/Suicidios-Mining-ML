@@ -9,3 +9,7 @@ output "silver_bucket_name" {
 output "gold_bucket_name" {
   value = module.gold_bucket.bucket_name
 }
+
+output "state_machine_arn" {
+  value = module.stepfunctions.state_machine_arn
+}

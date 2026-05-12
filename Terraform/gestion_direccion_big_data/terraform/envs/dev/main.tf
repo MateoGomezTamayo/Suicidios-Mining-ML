@@ -79,3 +79,19 @@ module "iam" {
   gold_bucket   = module.gold_bucket.bucket_name
   temp_bucket   = module.bronze_bucket.bucket_name
 }
+
+module "stepfunctions" {
+  source = "../../modules/stepfunctions"
+
+  project = var.project
+  env     = var.env
+
+  bronze_bucket = module.bronze_bucket.bucket_name
+  silver_bucket = module.silver_bucket.bucket_name
+  gold_bucket   = module.gold_bucket.bucket_name
+
+  glue_job_bronze_silver = module.glue_job.glue_job_bronze_silver_name
+  glue_job_silver_gold   = module.glue_job.glue_job_silver_gold_name
+
+  tags = var.tags
+}
