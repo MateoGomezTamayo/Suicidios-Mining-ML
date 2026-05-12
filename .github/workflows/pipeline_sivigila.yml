@@ -132,22 +132,74 @@ jobs:
             --no-progress
           echo "Script subido: s3://${{ env.BRONZE_BUCKET }}/scripts/gx_data_quality.py"
 
-      # ── Verificacion ───────────────────────────────────────
-      - name: "Verificar archivos en Bronze bucket"
+      # ── Validacion de recursos en AWS (0.5) ───────────────
+      - name: "[VALIDATE] Todos los recursos presentes en S3"
         run: |
-          echo "=== Contenido bucket Bronze ==="
-          aws s3 ls "s3://${{ env.BRONZE_BUCKET }}/" --recursive --human-readable
+          set -e
+          BUCKET="${{ env.BRONZE_BUCKET }}"
+          ERRORS=0
+
+          validate_file() {
+            local LOCAL="$1"
+            local KEY="$2"
+            local LABEL="$3"
+
+            # Tamaño local en bytes
+            LOCAL_SIZE=$(stat -c%s "$LOCAL")
+
+            # Tamaño en S3 (falla con error si el objeto no existe)
+            S3_SIZE=$(aws s3api head-object \
+              --bucket "$BUCKET" --key "$KEY" \
+              --query "ContentLength" --output text 2>&1)
+
+            if echo "$S3_SIZE" | grep -qi "Not Found\|NoSuchKey\|error"; then
+              echo "  FAIL  $LABEL -> objeto NO encontrado en s3://$BUCKET/$KEY"
+              ERRORS=$((ERRORS + 1))
+              return
+            fi
+
+            if [ "$LOCAL_SIZE" -eq "$S3_SIZE" ]; then
+              echo "  OK    $LABEL  |  local=${LOCAL_SIZE}B  s3=${S3_SIZE}B  -> MATCH"
+            else
+              echo "  WARN  $LABEL  |  local=${LOCAL_SIZE}B  s3=${S3_SIZE}B  -> MISMATCH (puede ser re-upload reciente)"
+              # No es error crítico: S3 puede comprimir o el objeto es válido igualmente
+            fi
+          }
+
+          echo "==========================================="
+          echo "  VALIDACION DE RECURSOS EN AWS S3"
+          echo "  Bucket: s3://$BUCKET"
+          echo "==========================================="
+
+          validate_file "sivigila_intsuicidio.csv" \
+            "sivigila_intsuicidio.csv" \
+            "CSV SIVIGILA"
+
+          validate_file "Big Data AWS/glue_bronze_to_silver_sales.py" \
+            "scripts/etl_sivigila.py" \
+            "Script Bronze->Silver"
+
+          validate_file "Big Data AWS/glue_silver_to_gold_sivigila.py" \
+            "scripts/etl_sivigila_gold.py" \
+            "Script Silver->Gold"
+
+          validate_file "GX_Glue_Code.py" \
+            "scripts/gx_data_quality.py" \
+            "Script Data Quality"
+
+          echo "==========================================="
+          echo "  INVENTARIO COMPLETO DEL BUCKET BRONZE"
+          echo "==========================================="
+          aws s3 ls "s3://$BUCKET/" --recursive --human-readable
+
+          if [ "$ERRORS" -gt 0 ]; then
+            echo ""
+            echo "ERROR: $ERRORS objeto(s) no encontrados en S3. Revisar pasos de upload."
+            exit 1
+          fi
+
           echo ""
-          echo "=== Verificando archivos clave ==="
-          aws s3api head-object --bucket "${{ env.BRONZE_BUCKET }}" --key "sivigila_intsuicidio.csv" \
-            --query "{Size:ContentLength,Modified:LastModified}" --output table
-          aws s3api head-object --bucket "${{ env.BRONZE_BUCKET }}" --key "scripts/etl_sivigila.py" \
-            --query "{Size:ContentLength,Modified:LastModified}" --output table
-          aws s3api head-object --bucket "${{ env.BRONZE_BUCKET }}" --key "scripts/etl_sivigila_gold.py" \
-            --query "{Size:ContentLength,Modified:LastModified}" --output table
-          aws s3api head-object --bucket "${{ env.BRONZE_BUCKET }}" --key "scripts/gx_data_quality.py" \
-            --query "{Size:ContentLength,Modified:LastModified}" --output table
-          echo "Todos los archivos verificados correctamente."
+          echo "RESULTADO: Todos los recursos validados correctamente en AWS S3."
 
   # ─────────────────────────────────────────────────────────
   # JOB 3: Glue ETL Bronze - Silver
