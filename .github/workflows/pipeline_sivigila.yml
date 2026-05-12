@@ -321,3 +321,67 @@ jobs:
 
       - name: Verificar tablas Gold creadas
         run: aws s3 ls "s3://${{ env.GOLD_BUCKET }}/" --recursive
+
+  # ─────────────────────────────────────────────────────────
+  # JOB 5: Linaje de datos en OpenMetadata
+  # Solo corre si la variable OPENMETADATA_URL está definida
+  # en el repositorio (Settings → Variables → Repository variables)
+  # Ejemplo: OPENMETADATA_URL = http://mi-servidor:8585
+  # ─────────────────────────────────────────────────────────
+  lineage_openmetadata:
+    name: "OpenMetadata - Registro de linaje"
+    runs-on: ubuntu-latest
+    needs: glue_silver_to_gold
+    if: vars.OPENMETADATA_URL != ''
+    continue-on-error: true        # No falla el pipeline si OM no está disponible
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Configurar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Instalar dependencias
+        run: pip install requests
+
+      - name: Registrar linaje en OpenMetadata
+        env:
+          OM_HOST:     ${{ vars.OPENMETADATA_URL }}
+          OM_EMAIL:    ${{ vars.OPENMETADATA_EMAIL || 'admin@open-metadata.org' }}
+          OM_PASSWORD: ${{ secrets.OPENMETADATA_PASSWORD || 'admin' }}
+          OM_TOKEN:    ${{ secrets.OPENMETADATA_TOKEN }}
+        run: |
+          echo "=== Registrando linaje en OpenMetadata ==="
+          echo "Host: $OM_HOST"
+
+          if [ -n "$OM_TOKEN" ]; then
+            python openmetadata_lineage.py \
+              --host "$OM_HOST" \
+              --token "$OM_TOKEN"
+          else
+            python openmetadata_lineage.py \
+              --host     "$OM_HOST" \
+              --email    "$OM_EMAIL" \
+              --password "$OM_PASSWORD"
+          fi
+
+      - name: Instrucciones para uso local
+        if: always()
+        run: |
+          echo ""
+          echo "=== Para registrar el linaje localmente ==="
+          echo "1. Levantar OpenMetadata:"
+          echo "   cd openmetadata && docker compose up -d"
+          echo ""
+          echo "2. Esperar ~2 min y abrir: http://localhost:8585"
+          echo "   Login: admin@open-metadata.org / admin"
+          echo ""
+          echo "3. Ejecutar el script de linaje:"
+          echo "   python openmetadata_lineage.py"
+          echo ""
+          echo "4. Ver el linaje en:"
+          echo "   http://localhost:8585/explore/lineage"
+

@@ -1,0 +1,141 @@
+# ================================================================
+# OpenMetadata 1.4.7 – Stack local para linaje de datos SIVIGILA
+# ================================================================
+# Levanta:  MySQL 8  +  Elasticsearch 7.16.3  +  OpenMetadata Server
+#
+# Uso:
+#   docker compose up -d
+#   Esperar ~2 min → abrir http://localhost:8585
+#   Login: admin@open-metadata.org / admin
+#
+# Parar:
+#   docker compose down
+# ================================================================
+
+version: "3.9"
+
+volumes:
+  om-mysql-data:
+  om-es-data:
+
+networks:
+  om_net:
+    ipam:
+      driver: default
+      config:
+        - subnet: "172.16.240.0/24"
+
+services:
+
+  # ── MySQL (imagen pre-configurada con el schema de OpenMetadata) ──
+  mysql:
+    container_name: openmetadata_mysql
+    image: openmetadata/db:1.4.7
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: password
+    expose:
+      - 3306
+    volumes:
+      - om-mysql-data:/var/lib/mysql
+    networks:
+      om_net:
+        ipv4_address: 172.16.240.10
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost",
+             "-u", "openmetadata_user", "--password=openmetadata_password"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+
+  # ── Elasticsearch ─────────────────────────────────────────────────
+  elasticsearch:
+    container_name: openmetadata_elasticsearch
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.16.3
+    environment:
+      - discovery.type=single-node
+      - ES_JAVA_OPTS=-Xms1024m -Xmx1024m
+      - xpack.security.enabled=false
+    expose:
+      - 9200
+      - 9300
+    volumes:
+      - om-es-data:/usr/share/elasticsearch/data
+    networks:
+      om_net:
+        ipv4_address: 172.16.240.11
+    healthcheck:
+      test: ["CMD-SHELL",
+             "curl -s http://localhost:9200/_cluster/health | grep -qE '\"status\":\"(green|yellow)\"'"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+
+  # ── OpenMetadata Server ───────────────────────────────────────────
+  openmetadata-server:
+    container_name: openmetadata_server
+    image: openmetadata/server:1.4.7
+    restart: always
+    environment:
+      # Cluster
+      OPENMETADATA_CLUSTER_NAME: openmetadata
+      SERVER_PORT:               "8585"
+      SERVER_ADMIN_PORT:         "8586"
+      LOG_LEVEL:                 INFO
+      MIGRATION_LIMIT_PARAM:     "1200"
+
+      # Base de datos
+      DB_DRIVER_CLASS:     com.mysql.cj.jdbc.Driver
+      DB_SCHEME:           mysql
+      DB_PARAMS:           allowPublicKeyRetrieval=true&useSSL=false&serverTimezone=UTC
+      DB_USER:             openmetadata_user
+      DB_USER_PASSWORD:    openmetadata_password
+      DB_HOST:             mysql
+      DB_PORT:             "3306"
+      OM_DATABASE:         openmetadata_db
+
+      # Elasticsearch
+      ELASTICSEARCH_SCHEME: http
+      ELASTICSEARCH_HOST:   elasticsearch
+      ELASTICSEARCH_PORT:   "9200"
+      ELASTICSEARCH_INDEX_MAPPING_LANG: EN
+
+      # Autenticacion basica
+      AUTHENTICATION_PROVIDER: basic
+      AUTHENTICATION_PUBLIC_KEYS:
+        "[http://localhost:8585/api/v1/system/config/jwks]"
+      AUTHENTICATION_AUTHORITY: "http://localhost:8585"
+      AUTHENTICATION_CLIENT_ID: ""
+      AUTHENTICATION_CALLBACK_URL: ""
+
+      # Autorizacion
+      AUTHORIZER_CLASS_NAME: org.openmetadata.service.security.DefaultAuthorizer
+      AUTHORIZER_REQUEST_FILTER: org.openmetadata.service.security.JwtFilter
+      AUTHORIZER_ADMIN_PRINCIPALS:       "[admin]"
+      AUTHORIZER_INGESTION_PRINCIPALS:   "[ingestion-bot]"
+      AUTHORIZER_ALLOWED_REGISTRATION_DOMAIN: "all"
+      AUTHORIZER_ENFORCE_PRINCIPAL_DOMAIN: "false"
+
+      ENABLE_SECURE_SOCKET: "false"
+
+      # No requiere Airflow para uso basico
+      PIPELINE_SERVICE_CLIENT_ENABLED: "false"
+
+    ports:
+      - "8585:8585"
+      - "8586:8586"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      elasticsearch:
+        condition: service_healthy
+    networks:
+      om_net:
+        ipv4_address: 172.16.240.13
+    healthcheck:
+      test: ["CMD-SHELL",
+             "wget -q --spider http://localhost:8585/healthcheck || exit 1"]
+      interval: 30s
+      timeout: 15s
+      retries: 10
+      start_period: 120s
