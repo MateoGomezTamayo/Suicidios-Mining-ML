@@ -133,10 +133,9 @@ jobs:
       - name: Lanzar Glue job Bronze-Silver
         id: start_job
         run: |
-          ARGS="--input_path=s3://${{ env.BRONZE_BUCKET }}/sivigila_intsuicidio.csv,--output_path=s3://${{ env.SILVER_BUCKET }}/sivigila/"
           RUN_ID=$(aws glue start-job-run \
             --job-name "${{ env.JOB_BRONZE_SILVER }}" \
-            --arguments "$ARGS" \
+            --arguments '{"--input_path":"s3://${{ env.BRONZE_BUCKET }}/sivigila_intsuicidio.csv","--output_path":"s3://${{ env.SILVER_BUCKET }}/sivigila/"}' \
             --query "JobRunId" \
             --output text)
           echo "run_id=$RUN_ID" >> $GITHUB_OUTPUT
@@ -193,10 +192,9 @@ jobs:
       - name: Lanzar Glue job Silver-Gold
         id: start_job
         run: |
-          ARGS="--input_path=s3://${{ env.SILVER_BUCKET }}/sivigila/,--output_gold_resumen=s3://${{ env.GOLD_BUCKET }}/sivigila_resumen_comuna/,--output_gold_riesgo=s3://${{ env.GOLD_BUCKET }}/sivigila_perfil_riesgo/"
           RUN_ID=$(aws glue start-job-run \
             --job-name "${{ env.JOB_SILVER_GOLD }}" \
-            --arguments "$ARGS" \
+            --arguments '{"--input_path":"s3://${{ env.SILVER_BUCKET }}/sivigila/","--output_gold_resumen":"s3://${{ env.GOLD_BUCKET }}/sivigila_resumen_comuna/","--output_gold_riesgo":"s3://${{ env.GOLD_BUCKET }}/sivigila_perfil_riesgo/"}' \
             --query "JobRunId" \
             --output text)
           echo "run_id=$RUN_ID" >> $GITHUB_OUTPUT
