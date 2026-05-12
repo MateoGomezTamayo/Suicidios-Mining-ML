@@ -49,5 +49,5 @@ output_mineria/*.svg
 # Additional historical output folder
 outputs/
 
-# Root-level dataset
-sivigila_intsuicidio.csv
+# Root-level dataset (necesario en git para el pipeline de GitHub Actions)
+# sivigila_intsuicidio.csv
