@@ -27,6 +27,7 @@ Uso con usuario/contraseña personalizada:
 """
 
 import argparse
+import base64
 import json
 import sys
 import time
@@ -70,9 +71,11 @@ class OpenMetadataClient:
             self._login(email, password)
 
     def _login(self, email: str, password: str) -> None:
+        # OpenMetadata 1.3+ requiere la contraseña codificada en Base64
+        password_b64 = base64.b64encode(password.encode()).decode()
         resp = self.session.post(
             f"{self.host}/api/v1/users/login",
-            json={"email": email, "password": password},
+            json={"email": email, "password": password_b64},
             timeout=30,
         )
         if not resp.ok:
@@ -93,6 +96,9 @@ class OpenMetadataClient:
             raise RuntimeError(
                 f"PUT {path} -> {resp.status_code}: {resp.text[:400]}"
             )
+        # El endpoint de linaje devuelve 200 vacío o 204
+        if not resp.text.strip():
+            return {}
         return resp.json()
 
     def _get_by_fqn(self, entity_path: str, fqn: str) -> dict | None:
@@ -155,7 +161,7 @@ class OpenMetadataClient:
             "name":        name,
             "description": description,
             "service":     service_fqn,
-            "fullPath":    s3_path,
+            "prefix":      s3_path,
         }
         entity = self._put("/api/v1/containers", payload)
         print(f"  [CONTAINER] '{name}'  id={entity['id']}")
@@ -197,7 +203,7 @@ class OpenMetadataClient:
             "databaseSchema": schema_fqn,
             "columns":        columns,
             "tableConstraints": [],
-            "location":       location,
+            "sourceUrl":      location,
         }
         entity = self._put("/api/v1/tables", payload)
         print(f"  [TABLE] '{name}'  id={entity['id']}")
@@ -417,7 +423,7 @@ if __name__ == "__main__":
         help="URL base de OpenMetadata (default: http://localhost:8585)"
     )
     parser.add_argument(
-        "--email",    default="admin@open-metadata.org",
+        "--email",    default="admin@openmetadata.org",
         help="Email de usuario OpenMetadata"
     )
     parser.add_argument(
@@ -430,3 +436,4 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
     sys.exit(main(args.host, args.email, args.password, args.token))
+
