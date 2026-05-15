@@ -3,7 +3,7 @@ name: Deploy Data Lake Terraform
 on:
   push:
     branches:
-      - feature/actions_back
+      - main
 
 env:
   AWS_REGION: us-east-1
@@ -73,7 +73,7 @@ jobs:
       # Subir CSV
       - name: Upload CSV
         run: |
-          aws s3 cp ../../archivos_para_bronze/sales_small.csv s3://$BRONZE_BUCKET/
+          aws s3 cp ../../archivos_para_bronze/sivigila_intsuicidio.csv s3://$BRONZE_BUCKET/sivigila_intsuicidio.csv
 
       # Subir script Glue
       - name: Upload Glue Script
