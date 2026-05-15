@@ -46,6 +46,8 @@ jobs:
       - name: Instalar Terraform
         uses: hashicorp/setup-terraform@v3
         with:
+          terraform_wrapper: false
+        with:
           terraform_version: "1.7.5"
           terraform_wrapper: false
 
@@ -208,6 +210,7 @@ jobs:
     name: "Glue - Bronze - Silver"
     runs-on: ubuntu-latest
     needs: upload
+    timeout-minutes: 45
 
     steps:
       - name: Configurar credenciales AWS
@@ -232,13 +235,15 @@ jobs:
         run: |
           RUN_ID="${{ steps.start_job.outputs.run_id }}"
           echo "Monitoreando job: $RUN_ID"
-          while true; do
+          MAX_WAIT=80
+          ATTEMPTS=0
+          while [ $ATTEMPTS -lt $MAX_WAIT ]; do
             STATE=$(aws glue get-job-run \
               --job-name "${{ env.JOB_BRONZE_SILVER }}" \
               --run-id "$RUN_ID" \
               --query "JobRun.JobRunState" \
-              --output text)
-            echo "Estado actual: $STATE"
+              --output text 2>&1) || { echo "Error consultando estado: $STATE"; exit 1; }
+            echo "[$(($ATTEMPTS * 30))s] Estado: $STATE"
             case "$STATE" in
               SUCCEEDED)
                 echo "Job Bronze-Silver completado exitosamente."
@@ -254,11 +259,13 @@ jobs:
                 exit 1
                 ;;
               *)
-                echo "Esperando... (estado: $STATE)"
+                ATTEMPTS=$(($ATTEMPTS + 1))
                 sleep 30
                 ;;
             esac
           done
+          echo "Timeout: el job no terminó en 40 minutos."
+          exit 1
 
   # ─────────────────────────────────────────────────────────
   # JOB 4: Glue ETL Silver - Gold
@@ -267,6 +274,7 @@ jobs:
     name: "Glue - Silver - Gold"
     runs-on: ubuntu-latest
     needs: glue_bronze_to_silver
+    timeout-minutes: 45
 
     steps:
       - name: Configurar credenciales AWS
@@ -291,13 +299,15 @@ jobs:
         run: |
           RUN_ID="${{ steps.start_job.outputs.run_id }}"
           echo "Monitoreando job: $RUN_ID"
-          while true; do
+          MAX_WAIT=80
+          ATTEMPTS=0
+          while [ $ATTEMPTS -lt $MAX_WAIT ]; do
             STATE=$(aws glue get-job-run \
               --job-name "${{ env.JOB_SILVER_GOLD }}" \
               --run-id "$RUN_ID" \
               --query "JobRun.JobRunState" \
-              --output text)
-            echo "Estado actual: $STATE"
+              --output text 2>&1) || { echo "Error consultando estado: $STATE"; exit 1; }
+            echo "[$(($ATTEMPTS * 30))s] Estado: $STATE"
             case "$STATE" in
               SUCCEEDED)
                 echo "Job Silver-Gold completado exitosamente."
@@ -313,11 +323,13 @@ jobs:
                 exit 1
                 ;;
               *)
-                echo "Esperando... (estado: $STATE)"
+                ATTEMPTS=$(($ATTEMPTS + 1))
                 sleep 30
                 ;;
             esac
           done
+          echo "Timeout: el job no terminó en 40 minutos."
+          exit 1
 
       - name: Verificar tablas Gold creadas
         run: aws s3 ls "s3://${{ env.GOLD_BUCKET }}/" --recursive
