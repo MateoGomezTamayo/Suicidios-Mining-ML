@@ -71,11 +71,20 @@ jobs:
           echo "BRONZE_BUCKET=$(terraform output -raw bronze_bucket_name)" >> $GITHUB_ENV
 
       # Subir CSV
-      - name: Upload CSV
+      - name: Upload CSV to S3 Bronze
         run: |
           aws s3 cp ../../archivos_para_bronze/sivigila_intsuicidio.csv s3://$BRONZE_BUCKET/sivigila_intsuicidio.csv
+          echo "✅ CSV subido a: s3://$BRONZE_BUCKET/sivigila_intsuicidio.csv"
 
       # Subir script Glue
-      - name: Upload Glue Script
+      - name: Upload Glue Script to S3 Bronze
         run: |
           aws s3 cp ../../archivos_para_bronze/scripts/etl_sales.py s3://$BRONZE_BUCKET/scripts/etl_sales.py
+          echo "✅ Script Glue subido a: s3://$BRONZE_BUCKET/scripts/etl_sales.py"
+
+      # Verificar archivos subidos en S3
+      - name: Verify files in S3
+        run: |
+          echo "=== Archivos en S3 Bronze ==="
+          aws s3 ls s3://$BRONZE_BUCKET/ --recursive --human-readable
+          echo "=== Verificacion completada ==="
